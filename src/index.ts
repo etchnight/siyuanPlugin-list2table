@@ -3,6 +3,7 @@ import {
   addMenuItemOnExist,
   getBlockKramdown,
   getSelectDom,
+  kramdown2markdown,
 } from "../../siyuanPlugin-common/siyuan-api";
 const STORAGE_NAME = "siyuanPlugin-list2table";
 
@@ -90,6 +91,7 @@ export default class PluginList2table extends Plugin {
     function buildJson(text: string): conceptTree {
       text = text.replace("* ", "");
       text = text.trim();
+      text = kramdown2markdown(text);
       const index = text.indexOf(splitFlag);
       if (index < 0 || (maxIndex > 0 && index + 1 > maxIndex)) {
         return { name: text, children: [] };
@@ -381,7 +383,7 @@ export default class PluginList2table extends Plugin {
       }
     }
     setCellRowspan(cells, propJson);
-    console.log("json", json);
+    //console.log("json", json);
     return {
       cells: cells,
       left: propJson,
@@ -485,7 +487,7 @@ export default class PluginList2table extends Plugin {
       arr[0][0].attr = `colspan="${tableParts.maxLeftDepth}" rowspan="${tableParts.maxHeadDepth}"`;
     }
     fillLeftTop();
-    console.log("左上", structuredClone(arr));
+    //console.log("左上", structuredClone(arr));
     //*上方表头
     function fillHead(
       json: conceptTree,
@@ -621,10 +623,10 @@ export default class PluginList2table extends Plugin {
     //console.log(tableParts);
     const { markdown, headRowNumber, tableArr } =
       this.tableParts2markdown(tableParts);
-    console.log(markdown);
-    console.log(tableArr);
+    //console.log(markdown);
+    //console.log(tableArr);
     const ele = this.markdown2table(markdown, headRowNumber, tableArr);
-    console.log(ele);
+    //console.log(ele);
   }
   private markdown2table(
     markdown: string,
