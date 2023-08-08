@@ -404,7 +404,7 @@ export default class PluginList2table extends Plugin {
       const colspan = json.colspan || 1;
       const rowspan = json.rowspan || 1;
       if (colspan > 1 || rowspan > 1) {
-        return ` {: colspan="${colspan}" rowspan="${rowspan}"}`;
+        return `colspan="${colspan}" rowspan="${rowspan}"`;
       }
       return ``;
     }
@@ -614,6 +614,7 @@ export default class PluginList2table extends Plugin {
     return {
       markdown: markdown,
       headRowNumber: tableParts.maxHeadDepth,
+      leftColNumber: tableParts.maxLeftDepth,
       tableArr: arr,
     };
   }
@@ -621,16 +622,22 @@ export default class PluginList2table extends Plugin {
     const json = this.list2json(kramdown);
     const tableParts = this.json2tableParts(json);
     //console.log(tableParts);
-    const { markdown, headRowNumber, tableArr } =
+    const { markdown, headRowNumber, tableArr, leftColNumber } =
       this.tableParts2markdown(tableParts);
     //console.log(markdown);
     //console.log(tableArr);
-    const ele = this.markdown2table(markdown, headRowNumber, tableArr);
+    const ele = this.markdown2table(
+      markdown,
+      headRowNumber,
+      leftColNumber,
+      tableArr
+    );
     //console.log(ele);
   }
   private markdown2table(
     markdown: string,
     headRowNumber: number,
+    leftColNumber: number,
     tableArr: cell[][]
   ) {
     //*转html
@@ -643,7 +650,7 @@ export default class PluginList2table extends Plugin {
     //*将部分body的tr移入head
     let tbody = table.querySelector("tbody");
     for (let i = 0; i < headRowNumber - 1; i++) {
-      let tr = tbody.childNodes[i];
+      let tr = tbody.children[i];
       table.querySelector("thead").appendChild(tr.cloneNode(true));
       tr.remove();
     }
@@ -653,9 +660,10 @@ export default class PluginList2table extends Plugin {
       let j = 0;
       for (let td of tr.cells) {
         let attr = tableArr[i][j].attr;
-        if (attr) {
-          td.outerHTML = `<${td.tagName} ${attr}>${td.innerText}</${td.tagName}>`;
-        }
+        const tagName = j < leftColNumber || i < headRowNumber ? "th" : "td";
+        td.outerHTML = `<${tagName} ${attr ? attr : ""}>${
+          td.innerText
+        }</${tagName}>`;
         j++;
       }
       i++;
