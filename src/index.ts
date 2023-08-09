@@ -9,6 +9,7 @@ const STORAGE_NAME = "siyuanPlugin-list2table";
 
 export default class PluginList2table extends Plugin {
   private isMobile: boolean;
+  private blockIconEventBindThis = this.blockIconEvent.bind(this);
   onload() {
     const frontEnd = getFrontend();
     this.isMobile = frontEnd === "mobile" || frontEnd === "browser-mobile";
@@ -44,34 +45,8 @@ export default class PluginList2table extends Plugin {
   }
   async onLayoutReady() {
     this.loadData(STORAGE_NAME);
-    const list2table = this.list2table.bind(this);
-    const menuItem: IMenuItemOption = {
-      label: "列表转表格",
-      id: "siyuanPlugin-list2table",
-      async click() {
-        const selectDom = getSelectDom();
-        if (!selectDom) {
-          return;
-        }
-        const blockId = selectDom.getAttribute("data-node-id");
-        const data = await getBlockKramdown(blockId);
-        let kramdown = data.kramdown;
-        //console.log(kramdown)
-        kramdown = kramdown.replace(/\{:.*?\}/g, "");
-        list2table(kramdown);
-      },
-    };
-    addMenuItemOnExist(menuItem, () => {
-      const selectDom = getSelectDom();
-      if (!selectDom) {
-        return false;
-      }
-      if (selectDom.getAttribute("data-type") === "NodeList") {
-        return true;
-      }
-      //return true
-      return false;
-    });
+    this.eventBus.on("click-blockicon", this.blockIconEventBindThis);
+
     //*测试用
     /*
     let tableMarkwon = (await getBlockKramdown("20230418104245-l0cygfa"))
@@ -84,7 +59,9 @@ export default class PluginList2table extends Plugin {
       height: "540px",
     });*/
   }
-  onunload() {}
+  onunload() {
+    this.eventBus.off("click-blockicon", this.blockIconEventBindThis);
+  }
   private list2json(kramdown: string): conceptTree {
     const splitFlag = this.data[STORAGE_NAME].splitFlag;
     const maxIndex = this.data[STORAGE_NAME].maxIndex;
@@ -680,6 +657,28 @@ export default class PluginList2table extends Plugin {
       height: "540px",
     });
     return ele;
+  }
+  private blockIconEvent({ detail }: any) {
+    if (detail.blockElements.length !== 1) {
+      return;
+    }
+    const selectDom = detail.blockElements[0];
+    if (selectDom.getAttribute("data-type") !== "NodeList") {
+      return;
+    }
+    const list2table = this.list2table.bind(this);
+    const menuItem: IMenuItemOption = {
+      label: "列表转表格",
+      id: "siyuanPlugin-list2table",
+      async click() {
+        const blockId = selectDom.getAttribute("data-node-id");
+        const data = await getBlockKramdown(blockId);
+        let kramdown = data.kramdown;
+        kramdown = kramdown.replace(/\{:.*?\}/g, "");
+        list2table(kramdown);
+      },
+    };
+    detail.menu.addItem(menuItem);
   }
 }
 
