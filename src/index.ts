@@ -1,15 +1,19 @@
-import { Dialog, IMenuItemOption, Plugin, Setting, getFrontend } from "siyuan";
 import {
-  addMenuItemOnExist,
-  getBlockKramdown,
-  getSelectDom,
-  kramdown2markdown,
-} from "../../siyuanPlugin-common/siyuan-api";
+  Dialog,
+  IMenuItemOption,
+  Lute,
+  Plugin,
+  Setting,
+  getFrontend,
+} from "siyuan";
+import { kramdown2markdown } from "../../siyuanPlugin-common/siyuan-api";
 const STORAGE_NAME = "siyuanPlugin-list2table";
 
 export default class PluginList2table extends Plugin {
   private isMobile: boolean;
-  private blockIconEventBindThis = this.blockIconEvent.bind(this);
+  private blockIconEventBindThis = this.onBlockIconEvent.bind(this);
+  private lute: Lute;
+  private luteClass: any;
   onload() {
     const frontEnd = getFrontend();
     this.isMobile = frontEnd === "mobile" || frontEnd === "browser-mobile";
@@ -44,6 +48,8 @@ export default class PluginList2table extends Plugin {
     });
   }
   async onLayoutReady() {
+    this.lute = window.Lute.New() as Lute;
+    this.luteClass = window.Lute;
     this.loadData(STORAGE_NAME);
     this.eventBus.on("click-blockicon", this.blockIconEventBindThis);
 
@@ -62,26 +68,39 @@ export default class PluginList2table extends Plugin {
   onunload() {
     this.eventBus.off("click-blockicon", this.blockIconEventBindThis);
   }
-  private list2json(kramdown: string): conceptTree {
+  /**
+   * @deprecated
+   * @param kramdown
+   */
+  private markdown2jsonList(kramdown: string): conceptTree[] {
     const splitFlag = this.data[STORAGE_NAME].splitFlag;
     const maxIndex = this.data[STORAGE_NAME].maxIndex;
     function buildJson(text: string): conceptTree {
+      let depth = text.indexOf("*") / 2 + 1;
       text = text.replace("* ", "");
       text = text.trim();
       text = kramdown2markdown(text);
       const index = text.indexOf(splitFlag);
       if (index < 0 || (maxIndex > 0 && index + 1 > maxIndex)) {
-        return { name: text, children: [] };
+        return { name: text, children: [], depth: depth };
       }
       const name = text.substring(0, index);
       const value = text.substring(index + 1);
-      return { name: name, value: value, children: [] };
+      return { name: name, value: value, children: [], depth: depth };
     }
     let textList = kramdown.split("\n");
     //去除空行
     textList = textList.filter((item) => {
       return item.replace(/ /g, "") != "";
     });
+    let jsonList: conceptTree[] = [];
+    for (let item of textList) {
+      jsonList.push(buildJson(item));
+    }
+    return jsonList;
+  }
+
+  private listJson2json(jsonList: conceptTree[]): conceptTree {
     let json: conceptTree = {
       name: "root",
       //type: undefined,
@@ -90,24 +109,21 @@ export default class PluginList2table extends Plugin {
     };
     let parent = json;
     let lastObj = json;
-    for (let item of textList) {
-      let depth = item.indexOf("*") / 2 + 1;
-      let obj = buildJson(item);
-      obj.depth = depth;
+    for (let obj of jsonList) {
       //*子级
-      if (depth > lastObj.depth) {
+      if (obj.depth > lastObj.depth) {
         parent = lastObj;
         parent.children.push(obj);
       }
       //*兄弟
-      else if (depth === lastObj.depth) {
+      else if (obj.depth === lastObj.depth) {
         parent.children.push(obj);
       }
       //*另外一个分支（上级）
-      else if (depth < lastObj.depth) {
+      else if (obj.depth < lastObj.depth) {
         let count = 0;
         parent = parent.parent;
-        while (parent.depth != depth - 1 && count < 100) {
+        while (parent.depth != obj.depth - 1 && count < 100) {
           count++;
           parent = parent.parent;
         }
@@ -136,7 +152,11 @@ export default class PluginList2table extends Plugin {
           ) {
             isProp = true;
           }
-        } else if (!child.children || child.children.length === 0) {
+        } else if (
+          (!child.children || child.children.length === 0) &&
+          child.value
+        ) {
+          //原为 !child.children || child.children.length === 0
           isProp = true;
         }
         if (isProp) {
@@ -171,7 +191,7 @@ export default class PluginList2table extends Plugin {
     }
     //*第一步-判断上方表头和左侧表头的分隔位置
     let propNameList: string[] = determineProp(json, []);
-    const propNameListUnique = [...new Set(propNameList)];
+    const propNameListUnique = [...new Set(propNameList)]; //去重
     const newpropNameList = determineProp(json, [], propNameListUnique);
     //console.log([...new Set(newpropNameList)]);//二次生成属性全列表
     //*第一步修正-合并非属性节点的`属性名`和`属性值`，以防止丢失信息，可选
@@ -580,10 +600,6 @@ export default class PluginList2table extends Plugin {
         }
         markdown += "\n";
       }
-      //*加尾注
-      //const lute = window.Lute;
-      //const id = lute.NewNodeID();
-      //markdown += `{: id="${id}" updated="20230418104702" colgroup="||||"}`;
       return markdown;
     }
     let markdown = buildMarkdown(arr);
@@ -595,8 +611,11 @@ export default class PluginList2table extends Plugin {
       tableArr: arr,
     };
   }
-  private list2table(kramdown: string) {
-    const json = this.list2json(kramdown);
+  private list2table(obj: { kramdown: string; dom: HTMLElement }) {
+    //console.log(kramdown);
+    const jsonList = this.markdown2jsonList(obj.kramdown);
+    const json = this.listJson2json(jsonList);
+    //console.log(json);
     const tableParts = this.json2tableParts(json);
     //console.log(tableParts);
     const { markdown, headRowNumber, tableArr, leftColNumber } =
@@ -618,9 +637,7 @@ export default class PluginList2table extends Plugin {
     tableArr: cell[][]
   ) {
     //*转html
-    //@ts-ignore
-    const lute = window.Lute.New();
-    const eleHtml = lute.Md2BlockDOM(markdown);
+    const eleHtml = this.lute.Md2BlockDOM(markdown);
     let ele = document.createElement("div");
     ele.innerHTML = eleHtml;
     let table = ele.querySelector("table");
@@ -658,7 +675,7 @@ export default class PluginList2table extends Plugin {
     });
     return ele;
   }
-  private blockIconEvent({ detail }: any) {
+  private onBlockIconEvent({ detail }: any) {
     if (detail.blockElements.length !== 1) {
       return;
     }
@@ -666,16 +683,19 @@ export default class PluginList2table extends Plugin {
     if (selectDom.getAttribute("data-type") !== "NodeList") {
       return;
     }
+    //console.log(lute.BlockDOM2HTML(selectDom.outerHTML));
     const list2table = this.list2table.bind(this);
+    const lute = this.lute;
     const menuItem: IMenuItemOption = {
       label: "列表转表格",
       id: "siyuanPlugin-list2table",
       async click() {
-        const blockId = selectDom.getAttribute("data-node-id");
-        const data = await getBlockKramdown(blockId);
-        let kramdown = data.kramdown;
-        kramdown = kramdown.replace(/\{:.*?\}/g, "");
-        list2table(kramdown);
+        //const blockId = selectDom.getAttribute("data-node-id");
+        //const data = await getBlockKramdown(blockId);
+        let kramdown = lute.BlockDOM2StdMd(selectDom.outerHTML);
+        console.log(kramdown);
+        //kramdown = kramdown.replace(/\{:.*?\}/g, "");
+        list2table({ kramdown: kramdown, dom: selectDom });
       },
     };
     detail.menu.addItem(menuItem);
