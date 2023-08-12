@@ -538,20 +538,15 @@ export default class PluginList2table extends Plugin {
     }
     let arr = buildArr(maxi, maxj, unfillCell);
     //*左上空白区域
-    mergeCell(
-      {
-        name: "",
-        value: [nodeParagraph("")],
-        children: [],
-        parent: undefined,
-        path: [],
-        colspan: tableParts.maxLeftDepth,
-        rowspan: tableParts.maxHeadDepth,
-      },
-      0,
-      0,
-      arr
-    );
+    let leftHead: cell = {
+      concept: [],
+      prop: [],
+      value: [nodeParagraph("")],
+      colspan: tableParts.maxLeftDepth,
+      rowspan: tableParts.maxHeadDepth,
+    };
+    arr[0][0] = leftHead;
+    mergeCell(leftHead, 0, 0, arr);
     function isUnfillCell(cell: cell) {
       if (cell.class) {
         return false;
@@ -678,8 +673,8 @@ export default class PluginList2table extends Plugin {
     };
   }
   private list2table(obj: { kramdown: string; dom: HTMLElement }) {
-    //console.log(kramdown);
-    //const jsonList = this.markdown2jsonList(obj.kramdown);保留
+    this.blockDom2htmlClear(obj.dom.innerHTML);
+    //?const jsonList = this.markdown2jsonList(obj.kramdown);保留
     let json: conceptTree = {
       name: "root",
       children: [],
@@ -696,7 +691,8 @@ export default class PluginList2table extends Plugin {
       this.tableParts2matrix(tableParts);
     console.log("tableArr", tableArr);
     const ele = this.matrix2table(headRowNum, leftColNum, tableArr);
-    console.log("ele", ele);
+    //console.log("ele", ele);
+    this.blockDom2htmlClear(ele.innerHTML);
   }
   private matrix2table(
     //?markdown: string,
@@ -764,9 +760,10 @@ export default class PluginList2table extends Plugin {
     for (let i = 0; i < headRowNumber - 1; i++) {
       let tr = tbody.children[i];
       table.querySelector("thead").appendChild(tr.cloneNode(true));
-      tr.remove();
+      tr.remove(); //使用了remove导致不能用let tr of tbody.rows循环
     }
-    //*写入属性
+    const lute = this.lute;
+    //*写入属性、内容
     let i = 0;
     for (let tr of table.rows) {
       let j = 0;
@@ -787,6 +784,8 @@ export default class PluginList2table extends Plugin {
       }
       i++;
     }
+    //let html = ele.innerHTML;
+    //html = lute.BlockDOM2HTML(html);
     //*输出
     const content = ` <div class="b3-dialog__content">
     <div class="protyle-wysiwyg protyle-wysiwyg--attr" style="height: 360px;">${ele.innerHTML}</div>
@@ -834,6 +833,47 @@ export default class PluginList2table extends Plugin {
         }
         return newArr;
       }*/
+  private blockDom2htmlClear(html: string) {
+    let result: string;
+    const lute = this.lute;
+    let ele = document.createElement("div");
+    ele.innerHTML = html;
+    let table = ele.querySelector("table");
+    if (table) {
+      //console.log(table)
+      result = "<table border = '1'>";
+      //*逐个单元格转化
+      for (let body of table.children) {
+        result += `<${body.tagName.toLowerCase()}>`;
+        for (let tr of body.children) {
+          result += `<${tr.tagName.toLowerCase()}>`;
+          for (let td2 of tr.children) {
+            let td = td2 as HTMLTableCellElement;
+            if (td.className === "fn__none") {
+              continue;
+            }
+            result += `<${td.tagName.toLowerCase()} colspan="${
+              td.colSpan || 1
+            }" rowspan="${td.rowSpan || 1}" >`;
+            result += lute.BlockDOM2HTML(td.innerHTML);
+            //console.log(td.innerHTML);
+            result += `</${td.tagName.toLowerCase()}>`;
+          }
+          result += `</${tr.tagName.toLowerCase()}>`;
+        }
+        result += `</${body.tagName.toLowerCase()}>`;
+      }
+      result += `</table>`;
+      //table.border = "1";
+      //result = table.outerHTML;
+    } else {
+      result = lute.BlockDOM2HTML(html);
+    }
+    result = result.replace(/\{: .*?\}/g, "");
+    console.log(result);
+    navigator.clipboard.writeText(result);
+    return result;
+  }
 }
 
 interface conceptTree {
