@@ -6,14 +6,13 @@ import {
   Setting,
   getFrontend,
 } from "siyuan";
-import { kramdown2markdown } from "../../siyuanPlugin-common/siyuan-api";
 const STORAGE_NAME = "siyuanPlugin-list2table";
 
 export default class PluginList2table extends Plugin {
   private isMobile: boolean;
   private blockIconEventBindThis = this.onBlockIconEvent.bind(this);
   private lute: Lute;
-  private luteClass: any;
+  //private luteClass: any;
   onload() {
     const frontEnd = getFrontend();
     this.isMobile = frontEnd === "mobile" || frontEnd === "browser-mobile";
@@ -49,7 +48,7 @@ export default class PluginList2table extends Plugin {
   }
   async onLayoutReady() {
     this.lute = window.Lute.New() as Lute;
-    this.luteClass = window.Lute;
+    //this.luteClass = window.Lute;
     this.loadData(STORAGE_NAME);
     this.eventBus.on("click-blockicon", this.blockIconEventBindThis);
 
@@ -68,10 +67,7 @@ export default class PluginList2table extends Plugin {
   onunload() {
     this.eventBus.off("click-blockicon", this.blockIconEventBindThis);
   }
-  /**
-   * @deprecated
-   * @param kramdown
-   */
+  /*
   private markdown2jsonList(kramdown: string): conceptTree[] {
     const splitFlag = this.data[STORAGE_NAME].splitFlag;
     const maxIndex = this.data[STORAGE_NAME].maxIndex;
@@ -99,6 +95,7 @@ export default class PluginList2table extends Plugin {
     }
     return jsonList;
   }
+
 
   private listJson2json(jsonList: conceptTree[]): conceptTree {
     let json: conceptTree = {
@@ -133,7 +130,70 @@ export default class PluginList2table extends Plugin {
       lastObj = obj;
     }
     return json;
+  }*/
+
+  /**
+   * 列表-列表项-段落等              -列表项
+   *   |--列表项-列表 -列表项    =>    |-列表项-列表项
+   *        |---段落等
+   */
+  private dom2json(dom: HTMLElement, parent: conceptTree): void {
+    let count = 0;
+    for (let item2 of dom.children) {
+      let item = item2 as HTMLElement;
+      if (!item.hasAttribute("data-node-id")) {
+        continue;
+      }
+      count++;
+      switch (item.getAttribute("data-type")) {
+        //兄弟节点
+        case "NodeListItem":
+          let self: conceptTree = {
+            name: "",
+            value: [],
+            children: [],
+            parent: parent,
+            path: structuredClone(parent.path),
+          };
+          parent.children.push(self);
+          this.dom2json(item, self);
+          break;
+        //进入下级节点
+        case "NodeList":
+          this.dom2json(item, parent);
+          break;
+        //修改父节点
+        default:
+          let name: string; //HTMLElement;
+          //提取属性名
+          if (
+            count === 1 &&
+            item.getAttribute("data-type") === "NodeParagraph"
+          ) {
+            let text = item.textContent;
+            const splitFlag = this.data[STORAGE_NAME].splitFlag;
+            const maxIndex = this.data[STORAGE_NAME].maxIndex;
+            const index = text.indexOf(splitFlag);
+            if (index < 0 || (maxIndex > 0 && index + 1 > maxIndex)) {
+              name = text;
+              //item.remove();
+            } else {
+              name = text.substring(0, index);
+              //*删除name
+              let re = new RegExp(`${name}${splitFlag}`.split("").join(".*?"));
+              //console.log(re);
+              item.innerHTML = item.innerHTML.replace(re, "");
+              //console.log(item.textContent);
+            }
+            parent.name = name;
+            parent.path.push(parent.name);
+          }
+          parent.value.push(item);
+        //console.log(parent.name, "value增加", item.textContent);
+      }
+    }
   }
+
   private json2tableParts(json: conceptTree) {
     //*判断是否为属性并直接处理
     function determineProp(
@@ -154,7 +214,7 @@ export default class PluginList2table extends Plugin {
           }
         } else if (
           (!child.children || child.children.length === 0) &&
-          child.value
+          child.value.length > 0
         ) {
           //原为 !child.children || child.children.length === 0
           isProp = true;
@@ -206,7 +266,7 @@ export default class PluginList2table extends Plugin {
         concatNameValue(child);
       }
     }
-    concatNameValue(json);
+    //concatNameValue(json);
     //*第二步-构建表的主体部分列表（单元格）,同时为树的节点添加path属性
     function buildcells(
       json: conceptTree,
@@ -229,7 +289,7 @@ export default class PluginList2table extends Plugin {
           let cell: cell = {
             concept: conceptForSelf,
             prop: propForSelf,
-            value: child.value || "",
+            value: child.value,
           };
           cells.push(cell);
           continue;
@@ -278,6 +338,9 @@ export default class PluginList2table extends Plugin {
       let propJson: conceptTree = {
         name: "root",
         children: [],
+        value: [],
+        parent: undefined,
+        path: ["root"],
       };
       for (let prop of props) {
         let propInSameLevel = findSameLevel(prop, propJson) || propJson;
@@ -339,7 +402,7 @@ export default class PluginList2table extends Plugin {
       clone(json, conceptJson);
       return conceptJson;
       function clone(jsonChild: conceptTree, conceptJsonChild: conceptTree) {
-        conceptJsonChild.parent = undefined;
+        //conceptJsonChild.parent = undefined;
         for (const child of jsonChild.children) {
           if (child.isProp) {
             conceptJsonChild.children = [];
@@ -350,6 +413,8 @@ export default class PluginList2table extends Plugin {
               name: child.name,
               children: [],
               path: child.path,
+              parent: child.parent,
+              value: [],
             });
             clone(
               child,
@@ -362,7 +427,10 @@ export default class PluginList2table extends Plugin {
     const conceptJson = buildConceptJson(json, {
       name: "root",
       children: [],
-      depth: 0,
+      //depth: 0,
+      parent: undefined,
+      path: [],
+      value: [],
     });
     sumChildAttr(conceptJson, "colspan");
     const maxDepthOfConcept = computeMaxDepth(conceptJson, 0, 0);
@@ -389,13 +457,14 @@ export default class PluginList2table extends Plugin {
       maxHeadDepth: maxDepthOfConcept,
     };
   }
-  private tableParts2markdown(tableParts: {
+  private tableParts2matrix(tableParts: {
     cells: cell[];
     head: conceptTree;
     left: conceptTree;
     maxHeadDepth: number;
     maxLeftDepth: number;
   }) {
+    //const lute = this.lute;
     function buildSpan(json: conceptTree | cell) {
       //@ts-ignore
       const colspan = json.colspan || 1;
@@ -405,26 +474,20 @@ export default class PluginList2table extends Plugin {
       }
       return ``;
     }
-    function realRowspan(json: conceptTree | cell, isTranspose: boolean) {
-      return isTranspose ? json.colspan : json.rowspan;
-    }
-    function realColspan(json: conceptTree | cell, isTranspose: boolean) {
-      return isTranspose ? json.rowspan : json.colspan;
-    }
+
     function mergeCell(
       child: conceptTree | cell,
       rowNum: number,
       colNum: number,
-      isTranspose: boolean,
       arr: cell[][]
     ) {
       //*合并单元格
       if (child.colspan > 1 || child.rowspan > 1) {
-        arr[rowNum][colNum].attr = buildSpan(child);
-        let colspan: number = realRowspan(child, isTranspose);
-        let rowspan: number = realColspan(child, isTranspose);
-        for (let i = 0; i < colspan; i++) {
-          for (let j = 0; j < rowspan; j++) {
+        //arr[rowNum][colNum].attr = buildSpan(child);
+        arr[rowNum][colNum].colspan = child.colspan;
+        arr[rowNum][colNum].rowspan = child.rowspan;
+        for (let i = 0; i < child.rowspan; i++) {
+          for (let j = 0; j < child.colspan; j++) {
             if (!i && !j) {
               continue;
             }
@@ -433,22 +496,22 @@ export default class PluginList2table extends Plugin {
         }
       }
     }
-    //*kramdown无法解析，仅做占位符,空单元格
+    //*做占位符,空单元格
     function emptyCell(): cell {
       return {
-        value: "",
+        value: [],
         concept: [],
         prop: [],
-        attr: `class="fn__none"`,
+        class: `fn__none`,
       };
     }
     //*尚未填充的单元格
     function unfillCell(): cell {
       return {
-        value: "",
+        value: [],
         concept: [],
         prop: [],
-        attr: "",
+        class: "",
       };
     }
     const head = tableParts.head;
@@ -475,117 +538,179 @@ export default class PluginList2table extends Plugin {
     }
     let arr = buildArr(maxi, maxj, unfillCell);
     //*左上空白区域
-    function fillLeftTop() {
-      for (let i = 0; i < tableParts.maxHeadDepth; i++) {
-        for (let j = 0; j < tableParts.maxLeftDepth; j++) {
-          arr[i][j] = emptyCell();
-        }
+    mergeCell(
+      {
+        name: "",
+        value: [nodeParagraph("")],
+        children: [],
+        parent: undefined,
+        path: [],
+        colspan: tableParts.maxLeftDepth,
+        rowspan: tableParts.maxHeadDepth,
+      },
+      0,
+      0,
+      arr
+    );
+    function isUnfillCell(cell: cell) {
+      if (cell.class) {
+        return false;
       }
-      arr[0][0].attr = `colspan="${tableParts.maxLeftDepth}" rowspan="${tableParts.maxHeadDepth}"`;
+      if (cell.value.length > 0) {
+        return false;
+      }
+      if (cell.colspan > 1 || cell.rowspan > 1) {
+        return false;
+      }
+      return true;
     }
-    fillLeftTop();
-    //console.log("左上", structuredClone(arr));
+    function nodeParagraph(md: string) {
+      /*
+      let div = document.createElement("div");
+      let div2 = document.createElement("div");
+      div.appendChild(div2);
+      div2.outerHTML = lute.Md2BlockDOM(md);*/
+      let div2 = document.createElement("p");
+      div2.textContent = md;
+      div2.style.display = "inline";
+      //let div2 = document.createTextNode(md);
+      return div2;
+    }
     //*上方表头
-    function fillHead(
-      json: conceptTree,
-      rowNum: number,
-      arr: cell[][],
-      isTranspose: boolean
-    ) {
+    function fillHead(json: conceptTree, rowNum: number, arr: cell[][]) {
       for (const child of json.children) {
         for (let colNum = 0; colNum < arr[rowNum].length; colNum++) {
-          if (!arr[rowNum][colNum].value && !arr[rowNum][colNum].attr) {
+          if (isUnfillCell(arr[rowNum][colNum])) {
             arr[rowNum][colNum] = {
-              value: child.name,
-              attr: "",
+              value: [nodeParagraph(child.name)],
+              //attr: "",
               prop: child.isProp ? child.path : [],
               concept: !child.isProp ? child.path : [],
             };
             //*合并单元格
-            mergeCell(child, rowNum, colNum, isTranspose, arr);
+            mergeCell(child, rowNum, colNum, arr);
             break;
           }
         }
-        fillHead(child, rowNum + 1, arr, isTranspose);
+        fillHead(child, rowNum + 1, arr);
       }
     }
     //let headArr=buildArr()
-    fillHead(head, 0, arr, false);
+    fillHead(head, 0, arr);
     //console.log("上方表头", structuredClone(arr));
     //*左侧表头
-    const leftArr = buildArr(tableParts.maxLeftDepth, left.rowspan, unfillCell);
-    fillHead(left, 0, leftArr, true);
-    //console.log("leftArr", structuredClone(leftArr));
-    const leftArrTrans = transpose(leftArr);
-    fill2Arr(arr, leftArrTrans, tableParts.maxHeadDepth);
-    //*转置
-    function transpose(arr: any[][]) {
-      let newArr = buildArr(arr[0].length, arr.length, unfillCell);
-      for (let i = 0; i < arr.length; i++) {
-        for (let j = 0; j < arr[i].length; j++) {
-          newArr[j][i] = arr[i][j];
+    //const leftArr = buildArr(tableParts.maxLeftDepth, left.rowspan, unfillCell);
+    //fillHead(left, 0, leftArr);
+    //const leftArrTrans = transpose(leftArr);
+    //fillLeft(arr, leftArrTrans, tableParts.maxHeadDepth);
+    fillLeft(left, 0, arr);
+    function fillLeft(json: conceptTree, colNum: number, arr: cell[][]) {
+      for (const child of json.children) {
+        for (let rowNum = 0; rowNum < arr.length; rowNum++) {
+          if (isUnfillCell(arr[rowNum][colNum])) {
+            arr[rowNum][colNum] = {
+              value: [nodeParagraph(child.name)],
+              //attr: "",
+              prop: child.isProp ? child.path : [],
+              concept: !child.isProp ? child.path : [],
+            };
+            //*合并单元格
+            mergeCell(child, rowNum, colNum, arr);
+            break;
+          }
         }
+        fillLeft(child, colNum + 1, arr);
       }
-      return newArr;
     }
-    function fill2Arr(arr: any[][], arrFrom: any[][], startRow: number) {
+    /*
+    function fillLeft(arr: any[][], arrFrom: any[][], startRow: number) {
       for (let i = 0; i < arrFrom.length; i++) {
         for (let j = 0; j < arrFrom[i].length; j++) {
           arr[i + startRow][j] = arrFrom[i][j];
         }
       }
-    }
-    //console.log("左侧", structuredClone(arr));
+    }*/
+    //console.log("左侧", arr);
     //*主体单元格
     function fillCells(
       cells: cell[],
       arr: cell[][],
-      rowIndexArr: cell[][],
-      rowOffset: number,
-      colIndexArr: cell[][],
-      colOffset: number
+      headRowNum: number,
+      leftColNum: number
     ) {
       for (let cell of cells) {
+        //*查找概念（上方表头）
         let colNum = 0;
-        for (let i = colIndexArr.length - 1; i >= 0; i--) {
-          for (let j = 0; j < colIndexArr[i].length; j++) {
-            if (
-              colIndexArr[i][j].concept.toString() === cell.concept.toString()
-            ) {
-              colNum = j + colOffset;
+        for (let i = headRowNum - 1; i >= 0; i--) {
+          for (let j = leftColNum - 1; j < arr[i].length; j++) {
+            if (arr[i][j].concept.toString() === cell.concept.toString()) {
+              colNum = j;
               break;
             }
           }
+          if (colNum) {
+            break;
+          }
         }
+        //*查找属性（左侧表头）
         let rowNum = 0;
-        for (let i = rowIndexArr.length - 1; i >= 0; i--) {
-          for (let j = 0; j < rowIndexArr[i].length; j++) {
-            if (rowIndexArr[i][j].prop.toString() === cell.prop.toString()) {
-              rowNum = j + rowOffset;
-              //console.log(rowIndexArr[i][j], i, j);
+        for (let j = leftColNum - 1; j >= 0; j--) {
+          for (let i = headRowNum - 1; i < arr.length; i++) {
+            if (arr[i][j].prop.toString() === cell.prop.toString()) {
+              rowNum = i;
               break;
             }
+          }
+          if (rowNum) {
+            break;
           }
         }
         arr[rowNum][colNum].value = cell.value;
-        mergeCell(cell, rowNum, colNum, false, arr);
+        mergeCell(cell, rowNum, colNum, arr);
       }
     }
-    fillCells(
-      cells,
-      arr,
-      leftArr,
-      tableParts.maxHeadDepth,
-      arr.slice(0, tableParts.maxHeadDepth),
-      0
-    );
-    //console.log("主体", structuredClone(arr));
+    fillCells(cells, arr, tableParts.maxHeadDepth, tableParts.maxLeftDepth);
+    return {
+      //?markdown: markdown,
+      headRowNum: tableParts.maxHeadDepth,
+      leftColNum: tableParts.maxLeftDepth,
+      tableArr: arr,
+    };
+  }
+  private list2table(obj: { kramdown: string; dom: HTMLElement }) {
+    //console.log(kramdown);
+    //const jsonList = this.markdown2jsonList(obj.kramdown);保留
+    let json: conceptTree = {
+      name: "root",
+      children: [],
+      parent: undefined,
+      path: ["root"],
+      value: [document.createElement("div")],
+    };
+    this.dom2json(obj.dom, json);
+    console.log("json", json);
+    //const json = this.listJson2json(jsonList);保留
+    const tableParts = this.json2tableParts(json);
+    console.log("tableParts", tableParts);
+    const { headRowNum, tableArr, leftColNum } =
+      this.tableParts2matrix(tableParts);
+    console.log("tableArr", tableArr);
+    const ele = this.matrix2table(headRowNum, leftColNum, tableArr);
+    console.log("ele", ele);
+  }
+  private matrix2table(
+    //?markdown: string,
+    headRowNumber: number,
+    leftColNumber: number,
+    tableArr: cell[][]
+  ) {
+    //*转html
     function buildMarkdown(arr: cell[][]) {
       let markdown: string = "";
       for (let i = 0; i < arr.length; i++) {
         markdown += "|";
         for (let j = 0; j < arr[i].length; j++) {
-          markdown += arr[i][j].value; //|| "emptyCell";
+          //markdown += arr[i][j].value; //|| "emptyCell";
           markdown += "|";
         }
         //*加表头
@@ -602,45 +727,38 @@ export default class PluginList2table extends Plugin {
       }
       return markdown;
     }
-    let markdown = buildMarkdown(arr);
-    //markdown = buildMarkdown(leftArr);
-    return {
-      markdown: markdown,
-      headRowNumber: tableParts.maxHeadDepth,
-      leftColNumber: tableParts.maxLeftDepth,
-      tableArr: arr,
-    };
-  }
-  private list2table(obj: { kramdown: string; dom: HTMLElement }) {
-    //console.log(kramdown);
-    const jsonList = this.markdown2jsonList(obj.kramdown);
-    const json = this.listJson2json(jsonList);
-    //console.log(json);
-    const tableParts = this.json2tableParts(json);
-    //console.log(tableParts);
-    const { markdown, headRowNumber, tableArr, leftColNumber } =
-      this.tableParts2markdown(tableParts);
-    //console.log(markdown);
-    //console.log(tableArr);
-    const ele = this.markdown2table(
-      markdown,
-      headRowNumber,
-      leftColNumber,
-      tableArr
-    );
-    //console.log(ele);
-  }
-  private markdown2table(
-    markdown: string,
-    headRowNumber: number,
-    leftColNumber: number,
-    tableArr: cell[][]
-  ) {
-    //*转html
+    let markdown = buildMarkdown(tableArr);
     const eleHtml = this.lute.Md2BlockDOM(markdown);
     let ele = document.createElement("div");
     ele.innerHTML = eleHtml;
     let table = ele.querySelector("table");
+    /*写入属性和内容(html文档写法)
+    let tabelHtml = `<thead>`;
+    for (let i = 0; i < tableArr.length; i++) {
+      tabelHtml += `<tr>`;
+      for (let j = 0; j < tableArr[i].length; j++) {
+        const tagName = j < leftColNumber || i < headRowNumber ? "th" : "td";
+        tabelHtml += `<${tagName} colSpan=${
+          tableArr[i][j].colspan || 1
+        } rowspan=${tableArr[i][j].rowspan || 1} class=${
+          tableArr[i][j].class || ""
+        }>`;
+        for (let value of tableArr[i][j].value) {
+          //td.appendChild(value);
+          tabelHtml += value.outerHTML;
+        }
+        tabelHtml += `</${tagName}>`;
+      }
+      tabelHtml += `</tr>`;
+      if (i == headRowNumber) {
+        tabelHtml += `</thead>`;
+        tabelHtml += `<tbody>`;
+      }
+    }
+    tabelHtml += `</tbody>`;
+    table.innerHTML = tabelHtml;
+    */
+    //*写入属性和内容 dom操作
     //*将部分body的tr移入head
     let tbody = table.querySelector("tbody");
     for (let i = 0; i < headRowNumber - 1; i++) {
@@ -653,11 +771,18 @@ export default class PluginList2table extends Plugin {
     for (let tr of table.rows) {
       let j = 0;
       for (let td of tr.cells) {
-        let attr = tableArr[i][j].attr;
+        let childHtml = ``;
+        for (let value of tableArr[i][j].value) {
+          childHtml += value.outerHTML; //?outerHTML
+        }
         const tagName = j < leftColNumber || i < headRowNumber ? "th" : "td";
-        td.outerHTML = `<${tagName} ${attr ? attr : ""}>${
-          td.innerText
-        }</${tagName}>`;
+        td.outerHTML = `<${tagName} colSpan=${
+          tableArr[i][j].colspan || 1
+        } rowspan=${tableArr[i][j].rowspan || 1} class=${
+          tableArr[i][j].class || ""
+        }>${childHtml}
+        </${tagName}>`;
+        //console.log(td);
         j++;
       }
       i++;
@@ -675,11 +800,12 @@ export default class PluginList2table extends Plugin {
     });
     return ele;
   }
+
   private onBlockIconEvent({ detail }: any) {
     if (detail.blockElements.length !== 1) {
       return;
     }
-    const selectDom = detail.blockElements[0];
+    const selectDom = detail.blockElements[0] as HTMLElement;
     if (selectDom.getAttribute("data-type") !== "NodeList") {
       return;
     }
@@ -690,35 +816,43 @@ export default class PluginList2table extends Plugin {
       label: "列表转表格",
       id: "siyuanPlugin-list2table",
       async click() {
-        //const blockId = selectDom.getAttribute("data-node-id");
-        //const data = await getBlockKramdown(blockId);
         let kramdown = lute.BlockDOM2StdMd(selectDom.outerHTML);
-        console.log(kramdown);
-        //kramdown = kramdown.replace(/\{:.*?\}/g, "");
-        list2table({ kramdown: kramdown, dom: selectDom });
+        list2table({ kramdown: kramdown, dom: selectDom.cloneNode(true) });
       },
     };
     detail.menu.addItem(menuItem);
   }
+  //todo 转置
+  /*private transpose(arr: any[][]) {
+        let newArr = buildArr(arr[0].length, arr.length, unfillCell);
+        for (let i = 0; i < arr.length; i++) {
+          for (let j = 0; j < arr[i].length; j++) {
+            newArr[j][i] = arr[i][j];
+            newArr[j][i].colspan = arr[i][j].rowspan;
+            newArr[j][i].rowspan = arr[i][j].colspan;
+          }
+        }
+        return newArr;
+      }*/
 }
 
 interface conceptTree {
   name: string; //属性或概念名
-  value?: string; //属性值
+  value: HTMLElement[]; //属性值
   isProp?: boolean;
   children: conceptTree[];
   colspan?: number;
   rowspan?: number;
-  depth?: number; //用于便于构建
-  parent?: conceptTree; //用于便于构建
-  path?: string[]; //便于判断单元格位置
+  //depth?: number; //用于便于构建
+  parent: conceptTree; //用于便于构建
+  path: string[]; //便于判断单元格位置
 }
 
 interface cell {
   concept: string[]; //概念名路径
   prop: string[]; //属性名路径
-  value: string; //单元格值
+  value: HTMLElement[]; //单元格值
   rowspan?: number;
   colspan?: number;
-  attr?: string; //
+  class?: string; //
 }
