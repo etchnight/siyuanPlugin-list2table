@@ -17,25 +17,277 @@
 
 更详细的转换说明请见示例。
 
-## 已知问题与计划
-
-- [ ] ❗❗ 目前表格不支持一个单元格内有多个块，转换列表项下含有多个块的列表会出现错误（包含段落，软换行）
-
-- [ ] ❗❗ 若要将结果复制至其他地方使用并保证正常显示，请将转换后表格 html 代码中`<th class="fn__none">`及`<td class="fn__none">`全部删除，计划后续增加表格导出功能
-- [ ] 计划增加行列转换功能
-
 ## 示例
 
-❗为在markdown中正确显示，以下示例由笔记内html转化而来，最终显示效果略有不同
+❗ 为在 markdown 中正确显示，以下示例中表格由笔记内生成 html 转化而来，最终显示效果略有不同
 
 ### 基础示例
+
 <details>
-<summary>基础示例</summary>
+<summary>点击展开</summary>
 <h4>转化前</h4>
-<ul><li><p>概念1<br /></p><ul><li>属性1：属性名与属性值之间应有分隔符号（可在设置中自定义）<br /></li><li>属性2：概念1-属性2<br /><br /></li></ul></li><li><p>概念2<br /></p><ul><li><p>概念2-1<br /></p><ul><li><p>属性1：概念、属性均可多级<br /></p></li><li><p>属性3<br /></p><ul><li>属性3-1：概念2-1-属性3-1<br /></li><li>属性3-2：概念2-1-属性3-2<br /><br /><br /><br /></li></ul></li></ul></li></ul></li></ul>
+
+- 概念 1
+
+  - 属性 1：属性名与属性值之间应有分隔符号（可在设置中自定义）
+  - 属性 2：概念 1-属性 2
+
+- 概念 2
+
+  - 概念 2-1
+
+    - 属性 1：概念、属性均可多级
+    - 属性 3
+
+      - 属性 3-1：概念 2-1-属性 3-1
+      - 属性 3-2：概念 2-1-属性 3-2
+
 <h4>转化后</h4>
 <table border = '1'><colgroup><col></col><col></col><col></col><col></col></colgroup><thead><tr><th colspan="2" rowspan="2" ></th><th colspan="1" rowspan="2" ><p style="display: inline;">概念1</p></th><th colspan="1" rowspan="1" ><p style="display: inline;">概念2</p></th></tr><tr><th colspan="1" rowspan="1" ><p style="display: inline;">概念2-1</p></th></tr></thead><tbody><tr><th colspan="2" rowspan="1" ><p style="display: inline;">属性1</p></th><td colspan="1" rowspan="1" ><p>属性名与属性值之间应有分隔符号（可在设置中自定义）<br /></p></td><td colspan="1" rowspan="1" ><p>概念、属性均可多级<br /></p></td></tr><tr><th colspan="2" rowspan="1" ><p style="display: inline;">属性2</p></th><td colspan="1" rowspan="1" ><p>概念1-属性2<br /></p></td><td colspan="1" rowspan="1" ></td></tr><tr><th colspan="1" rowspan="2" ><p style="display: inline;">属性3</p></th><th colspan="1" rowspan="1" ><p style="display: inline;">属性3-1</p></th><td colspan="1" rowspan="1" ></td><td colspan="1" rowspan="1" ><p>概念2-1-属性3-1<br /></p></td></tr><tr><th colspan="1" rowspan="1" ><p style="display: inline;">属性3-2</p></th><td colspan="1" rowspan="1" ></td><td colspan="1" rowspan="1" ><p>概念2-1-属性3-2<br /></p></td></tr></tbody></table>
 </details>
+
+### 支持单元格内放置多个块
+
+<details>
+<summary>点击展开</summary>
+<h4>转化前</h4>
+
+- 概念 2
+
+  - 属性 1：注意，即使多行也需要分隔符号
+
+    第一行
+
+    第二行
+
+  - 属性 2：
+
+    ###### 这是一个六级标题
+
+    ```ts
+    //这是一段代码块
+    ```
+
+    $$
+    \frac{1}{math}
+    $$
+
+<h4>转化后</h4>
+<table border = '1'><colgroup><col></col><col></col></colgroup><thead><tr><th colspan="1" rowspan="1" ><p style="display: inline;"></p>
+</th><th colspan="1" rowspan="1" ><p style="display: inline;">概念2</p>
+</th></tr></thead><tbody><tr><th colspan="1" rowspan="1" ><p style="display: inline;">属性1</p>
+</th><td colspan="1" rowspan="1" ><p>注意，即使多行也需要分隔符号<br />
+</p>
+<p>第一行<br />
+</p>
+<p>第二行<br />
+</p>
+</td></tr><tr><th colspan="1" rowspan="1" ><p style="display: inline;">属性2</p>
+</th><td colspan="1" rowspan="1" ><p></p>
+<h6>这是一个六级标题</h6>
+<pre><code class="language-ts">//这是一段代码块
+</code></pre>
+<div class="language-math" id="20230812204926-mjh0pnh">\frac{1}{math}</div>
+</td></tr></tbody></table>
+</details>
+
+### 属性判断
+
+<details>
+<summary>点击展开</summary>
+<h4>转化前</h4>
+
+- 概念 1
+
+  - 属性 3
+
+    - 属性 3-1：因在概念 2 中，属性 3 与属性 1 同级，会被判断为属性
+    - 属性 3-2：概念 1-属性 3-2
+
+- 概念 2
+
+  - 属性 1：概念 2-属性 1
+  - 属性 3
+
+    - 属性 3-2：概念 2-属性 3-2
+
+<h4>转化后</h4>
+
+<table border = '1'><colgroup><col></col><col></col><col></col><col></col></colgroup><thead><tr><th colspan="2" rowspan="1" ><p style="display: inline;"></p>
+</th><th colspan="1" rowspan="1" ><p style="display: inline;">概念1</p>
+</th><th colspan="1" rowspan="1" ><p style="display: inline;">概念2</p>
+</th></tr></thead><tbody><tr><th colspan="1" rowspan="2" ><p style="display: inline;">属性3</p>
+</th><th colspan="1" rowspan="1" ><p style="display: inline;">属性3-1</p>
+</th><td colspan="1" rowspan="1" ><p>因在概念2中，属性3与属性1同级，会被判断为属性<br />
+</p>
+</td><td colspan="1" rowspan="1" ></td></tr><tr><th colspan="1" rowspan="1" ><p style="display: inline;">属性3-2</p>
+</th><td colspan="1" rowspan="1" ><p>概念1-属性3-2<br />
+</p>
+</td><td colspan="1" rowspan="1" ><p>概念2-属性3-2<br />
+</p>
+</td></tr><tr><th colspan="2" rowspan="1" ><p style="display: inline;">属性1</p>
+</th><td colspan="1" rowspan="1" ></td><td colspan="1" rowspan="1" ><p>概念2-属性1<br />
+</p>
+</td></tr></tbody></table>
+</details>
+
+### 带有分隔符的非属性节点
+
+<details>
+<summary>点击展开</summary>
+<h4>转化前</h4>
+
+- 概念 1
+
+  - 概念 1-1：非属性节点分隔符后文本不会放入表格
+
+    - 属性 1：概念 1-属性 1
+
+  - 概念 1-2
+
+    - 属性 1：概念 1-2-属性 1
+
+ <h4>转化后</h4>
+
+<table border = '1'><colgroup><col></col><col></col><col></col></colgroup><thead><tr><th colspan="1" rowspan="2" ><p style="display: inline;"></p>
+</th><th colspan="2" rowspan="1" ><p style="display: inline;">概念1</p>
+</th></tr><tr><th colspan="1" rowspan="1" ><p style="display: inline;">概念1-1</p>
+</th><th colspan="1" rowspan="1" ><p style="display: inline;">概念1-2</p>
+</th></tr></thead><tbody><tr><th colspan="1" rowspan="1" ><p style="display: inline;">属性1</p>
+</th><td colspan="1" rowspan="1" ><p>概念1-属性1<br />
+</p>
+</td><td colspan="1" rowspan="1" ><p>概念1-2-属性1<br />
+</p>
+</td></tr></tbody></table>
+
+</details>
+
+### 属性名相同但父级不同
+
+<details>
+<summary>点击展开</summary>
+<h4>转化前</h4>
+
+- 概念 1
+
+  - 属性 1：概念 1-属性 1
+  - 属性 5
+
+    - 属性 6-2：属性同名但路径不同，可处理（概念 5-属性 6-2）
+
+  - 属性 6
+
+    - 属性 5-1：属性同名但路径不同，可处理（概念 6-属性 5-1）
+
+- 概念 2
+
+  - 属性 5
+
+    - 属性 5-1：概念 2-属性 5-1
+
+  - 属性 6
+
+    - 属性 6-1：概念 2-属性 6-1
+
+<h4>转化后</h4>
+<table border = '1'><colgroup><col></col><col></col><col></col><col></col></colgroup><thead><tr><th colspan="2" rowspan="1" ><p style="display: inline;"></p>
+</th><th colspan="1" rowspan="1" ><p style="display: inline;">概念1</p>
+</th><th colspan="1" rowspan="1" ><p style="display: inline;">概念2</p>
+</th></tr></thead><tbody><tr><th colspan="2" rowspan="1" ><p style="display: inline;">属性1</p>
+</th><td colspan="1" rowspan="1" ><p>概念1-属性1<br />
+</p>
+</td><td colspan="1" rowspan="1" ></td></tr><tr><th colspan="1" rowspan="2" ><p style="display: inline;">属性5</p>
+</th><th colspan="1" rowspan="1" ><p style="display: inline;">属性6-2</p>
+</th><td colspan="1" rowspan="1" ><p>属性同名但路径不同，可处理（概念5-属性6-2）<br />
+</p>
+</td><td colspan="1" rowspan="1" ></td></tr><tr><th colspan="1" rowspan="1" ><p style="display: inline;">属性5-1</p>
+</th><td colspan="1" rowspan="1" ></td><td colspan="1" rowspan="1" ><p>概念2-属性5-1<br />
+</p>
+</td></tr><tr><th colspan="1" rowspan="2" ><p style="display: inline;">属性6</p>
+</th><th colspan="1" rowspan="1" ><p style="display: inline;">属性5-1</p>
+</th><td colspan="1" rowspan="1" ><p>属性同名但路径不同，可处理（概念6-属性5-1）<br />
+</p>
+</td><td colspan="1" rowspan="1" ></td></tr><tr><th colspan="1" rowspan="1" ><p style="display: inline;">属性6-1</p>
+</th><td colspan="1" rowspan="1" ></td><td colspan="1" rowspan="1" ><p>概念2-属性6-1<br />
+</p>
+</td></tr></tbody></table>
+</details>
+
+### 更改分隔符号设置及文本存在多个分隔符
+
+下例中分隔符改为了`-`
+
+<details>
+<summary>点击展开</summary>
+<h4>转化前</h4>
+
+* 概念1
+
+  * 属性1-概念1-属性1
+* 概念2
+
+  * 属性1-概念2-属性2
+
+<h4>转化后</h4>
+
+<table border = '1'><colgroup><col></col><col></col><col></col></colgroup><thead><tr><th colspan="1" rowspan="1" ><p style="display: inline;"></p>
+</th><th colspan="1" rowspan="1" ><p style="display: inline;">概念1</p>
+</th><th colspan="1" rowspan="1" ><p style="display: inline;">概念2</p>
+</th></tr></thead><tbody><tr><th colspan="1" rowspan="1" ><p style="display: inline;">属性1</p>
+</th><td colspan="1" rowspan="1" ><p>概念1-属性1<br />
+</p>
+</td><td colspan="1" rowspan="1" ><p>概念2-属性2<br />
+</p>
+</td></tr></tbody></table>
+</details>
+
+### 更改属性名/概念名最大长度限制
+
+以下示例将属性名最大长度设为10
+
+<details>
+<summary>点击展开</summary>
+<h4>转化前</h4>
+
+* 概念1
+
+  * 这是一个很长的概念名，包含分隔符：分隔符以后内容
+
+    * 属性1：概念1-1-属性1
+  * 概念1-2
+
+    * 属性1：概念1-2-属性1
+
+<h4>转化后</h4>
+
+<table border = '1'><colgroup><col></col><col></col><col></col></colgroup><thead><tr><th colspan="1" rowspan="2" ><p style="display: inline;"></p>
+</th><th colspan="2" rowspan="1" ><p style="display: inline;">概念1</p>
+</th></tr><tr><th colspan="1" rowspan="1" ><p style="display: inline;">这是一个很长的概念名，包含分隔符：分隔符以后内容</p>
+</th><th colspan="1" rowspan="1" ><p style="display: inline;">概念1-2</p>
+</th></tr></thead><tbody><tr><th colspan="1" rowspan="1" ><p style="display: inline;">属性1</p>
+</th><td colspan="1" rowspan="1" ><p>概念1-1-属性1<br />
+</p>
+</td><td colspan="1" rowspan="1" ><p>概念1-2-属性1<br />
+</p>
+</td></tr></tbody></table>
+</details>
+
+## 已知问题及计划
+
+### 目前不支持无属性/无概念
+
+下例将无法转换成功，因为`概念1`无属性
+
+* 概念1
+* 概念2
+
+  * 属性1：概念2-属性1
+  * 属性2：概念2-属性2
+
+### 其他
+
+- [ ] 转置功能
+- [ ] 复制html到剪贴板
 
 ## 感谢
 

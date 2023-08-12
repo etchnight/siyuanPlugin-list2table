@@ -855,8 +855,11 @@ export default class PluginList2table extends Plugin {
             result += `<${td.tagName.toLowerCase()} colspan="${
               td.colSpan || 1
             }" rowspan="${td.rowSpan || 1}" >`;
-            result += lute.BlockDOM2HTML(td.innerHTML);
-            //console.log(td.innerHTML);
+            for (let value of td.children) {
+              result += lute.BlockDOM2HTML(value.outerHTML);
+              //console.log("转化前", value.outerHTML);
+              //console.log("转化后", lute.BlockDOM2HTML(value.outerHTML));
+            }
             result += `</${td.tagName.toLowerCase()}>`;
           }
           result += `</${tr.tagName.toLowerCase()}>`;
