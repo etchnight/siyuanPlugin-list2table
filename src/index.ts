@@ -683,13 +683,13 @@ export default class PluginList2table extends Plugin {
       value: [document.createElement("div")],
     };
     this.dom2json(obj.dom, json);
-    console.log("json", json);
+    //console.log("json", json);
     //const json = this.listJson2json(jsonList);保留
     const tableParts = this.json2tableParts(json);
-    console.log("tableParts", tableParts);
+    //console.log("tableParts", tableParts);
     const { headRowNum, tableArr, leftColNum } =
       this.tableParts2matrix(tableParts);
-    console.log("tableArr", tableArr);
+    //console.log("tableArr", tableArr);
     const ele = this.matrix2table(headRowNum, leftColNum, tableArr);
     //console.log("ele", ele);
     this.blockDom2htmlClear(ele.innerHTML);
@@ -873,8 +873,8 @@ export default class PluginList2table extends Plugin {
       result = lute.BlockDOM2HTML(html);
     }
     result = result.replace(/\{: .*?\}/g, "");
-    console.log(result);
-    navigator.clipboard.writeText(result);
+    //console.log(result);
+    //navigator.clipboard.writeText(result);
     return result;
   }
 }
