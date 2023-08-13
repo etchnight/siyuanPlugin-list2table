@@ -217,9 +217,8 @@ export default class PluginList2table extends Plugin {
           }
         } else if (
           (!child.children || child.children.length === 0) &&
-          child.value.length > 0
+          child.value.length > 0 //?这个必>0其实没什么用
         ) {
-          //原为 !child.children || child.children.length === 0
           isProp = true;
         }
         if (isProp) {
@@ -575,12 +574,20 @@ export default class PluginList2table extends Plugin {
       return div2;
     }
     //*上方表头
-    function fillHead(json: conceptTree, rowNum: number, arr: cell[][]) {
+    function fillHeadOrLeft(
+      json: conceptTree,
+      rowOrColNum: number,
+      arr: cell[][],
+      isLeft?: boolean
+    ) {
+      const length = isLeft ? arr.length : arr[rowOrColNum].length;
       for (const child of json.children) {
-        for (let colNum = 0; colNum < arr[rowNum].length; colNum++) {
+        for (let j = 0; j < length; j++) {
+          let rowNum = isLeft ? j : rowOrColNum;
+          let colNum = isLeft ? rowOrColNum : j;
           if (isUnfillCell(arr[rowNum][colNum])) {
             arr[rowNum][colNum] = {
-              value: [nodeParagraph(child.name)],
+              value: [nodeParagraph(child.name)], //!注意这里对value做了更改
               //attr: "",
               prop: child.isProp ? child.path : [],
               concept: !child.isProp ? child.path : [],
@@ -590,45 +597,15 @@ export default class PluginList2table extends Plugin {
             break;
           }
         }
-        fillHead(child, rowNum + 1, arr);
+        fillHeadOrLeft(child, rowOrColNum + 1, arr, isLeft);
       }
     }
     //let headArr=buildArr()
-    fillHead(head, 0, arr);
+    fillHeadOrLeft(head, 0, arr);
     //console.log("上方表头", structuredClone(arr));
     //*左侧表头
-    //const leftArr = buildArr(tableParts.maxLeftDepth, left.rowspan, unfillCell);
-    //fillHead(left, 0, leftArr);
-    //const leftArrTrans = transpose(leftArr);
-    //fillLeft(arr, leftArrTrans, tableParts.maxHeadDepth);
-    fillLeft(left, 0, arr);
-    function fillLeft(json: conceptTree, colNum: number, arr: cell[][]) {
-      for (const child of json.children) {
-        for (let rowNum = 0; rowNum < arr.length; rowNum++) {
-          if (isUnfillCell(arr[rowNum][colNum])) {
-            arr[rowNum][colNum] = {
-              value: [nodeParagraph(child.name)],
-              //attr: "",
-              prop: child.isProp ? child.path : [],
-              concept: !child.isProp ? child.path : [],
-            };
-            //*合并单元格
-            mergeCell(child, rowNum, colNum, arr);
-            break;
-          }
-        }
-        fillLeft(child, colNum + 1, arr);
-      }
-    }
-    /*
-    function fillLeft(arr: any[][], arrFrom: any[][], startRow: number) {
-      for (let i = 0; i < arrFrom.length; i++) {
-        for (let j = 0; j < arrFrom[i].length; j++) {
-          arr[i + startRow][j] = arrFrom[i][j];
-        }
-      }
-    }*/
-    //console.log("左侧", arr);
+    fillHeadOrLeft(left, 0, arr, true);
+    //console.log("左侧表头", arr);
     //*主体单元格
     function fillCells(
       cells: cell[],
