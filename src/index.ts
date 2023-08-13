@@ -6,6 +6,8 @@ import {
   Setting,
   getFrontend,
 } from "siyuan";
+import { stringify, parse } from "@ungap/structured-clone/json";
+
 const STORAGE_NAME = "siyuanPlugin-list2table";
 
 export default class PluginList2table extends Plugin {
@@ -13,6 +15,7 @@ export default class PluginList2table extends Plugin {
   private blockIconEventBindThis = this.onBlockIconEvent.bind(this);
   private lute: Lute;
   //private luteClass: any;
+  private isdebug: boolean = true;
   onload() {
     const frontEnd = getFrontend();
     this.isMobile = frontEnd === "mobile" || frontEnd === "browser-mobile";
@@ -683,16 +686,17 @@ export default class PluginList2table extends Plugin {
       value: [document.createElement("div")],
     };
     this.dom2json(obj.dom, json);
-    //console.log("json", json);
+    this.debugConsole("json", json);
     //const json = this.listJson2json(jsonList);保留
     const tableParts = this.json2tableParts(json);
-    //console.log("tableParts", tableParts);
+    this.debugConsole("tableParts", tableParts);
     const { headRowNum, tableArr, leftColNum } =
       this.tableParts2matrix(tableParts);
-    //console.log("tableArr", tableArr);
+    this.debugConsole("tableArr", tableArr);
     const ele = this.matrix2table(headRowNum, leftColNum, tableArr);
-    //console.log("ele", ele);
-    this.blockDom2htmlClear(ele.innerHTML);
+    this.debugConsole("ele", ele);
+    const html = this.blockDom2htmlClear(ele.innerHTML);
+    this.debugConsole("转化后", html);
   }
   private matrix2table(
     //?markdown: string,
@@ -876,6 +880,17 @@ export default class PluginList2table extends Plugin {
     //console.log(result);
     //navigator.clipboard.writeText(result);
     return result;
+  }
+  private debugConsole(...theArgs: any[]) {
+    if (!this.isdebug) {
+      return;
+    }
+    let newArgs = [];
+    for (let arg of theArgs) {
+      newArgs.push(parse(stringify(arg)));
+    }
+    console.log("列表转表格插件(引用)：", ...theArgs);
+    console.log("列表转表格插件(克隆)：", ...newArgs);
   }
 }
 

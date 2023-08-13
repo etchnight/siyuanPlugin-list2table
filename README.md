@@ -173,11 +173,11 @@
   - 属性 1：概念 1-属性 1
   - 属性 5
 
-    - 属性 6-2：属性同名但路径不同，可处理（概念 5-属性 6-2）
+    - 属性 6-2：属性同名但路径不同，可处理（属性 5-属性 6-2）
 
   - 属性 6
 
-    - 属性 5-1：属性同名但路径不同，可处理（概念 6-属性 5-1）
+    - 属性 5-1：属性同名但路径不同，可处理（属性 6-属性 5-1）
 
 - 概念 2
 
@@ -198,14 +198,14 @@
 </p>
 </td><td colspan="1" rowspan="1" ></td></tr><tr><th colspan="1" rowspan="2" ><p style="display: inline;">属性5</p>
 </th><th colspan="1" rowspan="1" ><p style="display: inline;">属性6-2</p>
-</th><td colspan="1" rowspan="1" ><p>属性同名但路径不同，可处理（概念5-属性6-2）<br />
+</th><td colspan="1" rowspan="1" ><p>属性同名但路径不同，可处理（属性5-属性6-2）<br />
 </p>
 </td><td colspan="1" rowspan="1" ></td></tr><tr><th colspan="1" rowspan="1" ><p style="display: inline;">属性5-1</p>
 </th><td colspan="1" rowspan="1" ></td><td colspan="1" rowspan="1" ><p>概念2-属性5-1<br />
 </p>
 </td></tr><tr><th colspan="1" rowspan="2" ><p style="display: inline;">属性6</p>
 </th><th colspan="1" rowspan="1" ><p style="display: inline;">属性5-1</p>
-</th><td colspan="1" rowspan="1" ><p>属性同名但路径不同，可处理（概念6-属性5-1）<br />
+</th><td colspan="1" rowspan="1" ><p>属性同名但路径不同，可处理（属性6-属性5-1）<br />
 </p>
 </td><td colspan="1" rowspan="1" ></td></tr><tr><th colspan="1" rowspan="1" ><p style="display: inline;">属性6-1</p>
 </th><td colspan="1" rowspan="1" ></td><td colspan="1" rowspan="1" ><p>概念2-属性6-1<br />
