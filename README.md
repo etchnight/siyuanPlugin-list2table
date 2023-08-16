@@ -319,7 +319,62 @@
 </td></tr></tbody></table>
 </details>
 
+### 注意，会清除概念名属性名所在段落的样式，与之对应，其部分样式不会影响表格生成
+
+<details>
+<summary>点击展开</summary>
+<h4>转化前</h4>
+
+* 概念1
+
+  * *属性*1：
+
+    概**<u>念1-属性</u>**2
+
+    第*二行*
+  * 属<u>性2</u>：概念1-属性2
+  * ^属性^3：概念1-属性3
+* 概念2
+
+  * 概念2-1
+
+    * 属==性1==：概念2-1-~~属性1~~
+    * 属`性2`：概念<kbd>2-1-属性</kbd>2
+    * 属**性3**：概念2-属性3
+
+<h4>转化后</h4>
+
+<table border = '1'><colgroup><col></col><col></col><col></col></colgroup><thead><tr><th colspan="1" rowspan="2" ><p style="display: inline;"></p>
+</th><th colspan="1" rowspan="2" ><p style="display: inline;">概念1</p>
+</th><th colspan="1" rowspan="1" ><p style="display: inline;">概念2</p>
+</th></tr><tr><th colspan="1" rowspan="1" ><p style="display: inline;">概念2-1</p>
+</th></tr></thead><tbody><tr><th colspan="1" rowspan="1" ><p style="display: inline;">属性1</p>
+</th><td colspan="1" rowspan="1" ><p>​<br />
+</p>
+<p>概<span data-type="strong u">念1-属性</span>2<br />
+</p>
+<p>第<span data-type="em">二行</span><br />
+</p>
+</td><td colspan="1" rowspan="1" ><p>概念2-1-属性1​<br />
+</p>
+</td></tr><tr><th colspan="1" rowspan="1" ><p style="display: inline;">属性2</p>
+</th><td colspan="1" rowspan="1" ><p>概念1-属性2​<br />
+</p>
+</td><td colspan="1" rowspan="1" ></td></tr><tr><th colspan="1" rowspan="1" ><p style="display: inline;">属性3</p>
+</th><td colspan="1" rowspan="1" ><p>概念1-属性3​<br />
+</p>
+</td><td colspan="1" rowspan="1" ><p>概念2-属性3​<br />
+</p>
+</td></tr><tr><th colspan="1" rowspan="1" ><p style="display: inline;">属性2</p>
+</th><td colspan="1" rowspan="1" ></td><td colspan="1" rowspan="1" ><p>概念​2-1-属性​2​<br />
+</p>
+</td></tr></tbody></table>
+</details>
+
+
 ## 已知问题及计划
+
+
 
 ### 其他
 

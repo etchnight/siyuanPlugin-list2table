@@ -327,6 +327,7 @@ export default class PluginList2table extends Plugin {
         }
       }
       function mergeProps(json: conceptTree, resInSameLevel: conceptTree) {
+        //console.log(resInSameLevel)
         for (let child of json.children) {
           let childInSameLevel = resInSameLevel.children.find((item) => {
             return item.path.toString() === child.path.toString();
