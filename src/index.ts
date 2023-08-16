@@ -179,7 +179,6 @@ export default class PluginList2table extends Plugin {
             const index = text.indexOf(splitFlag);
             if (index < 0 || (maxIndex > 0 && index + 1 > maxIndex)) {
               name = text;
-              //item.remove();
             } else {
               name = text.substring(0, index);
               //*删除name
@@ -187,11 +186,13 @@ export default class PluginList2table extends Plugin {
               //console.log(re);
               item.innerHTML = item.innerHTML.replace(re, "");
               //console.log(item.textContent);
+              parent.value.push(item);
             }
             parent.name = name;
             parent.path.push(parent.name);
+          } else {
+            parent.value.push(item);
           }
-          parent.value.push(item);
         //console.log(parent.name, "value增加", item.textContent);
       }
     }
@@ -215,10 +216,7 @@ export default class PluginList2table extends Plugin {
           ) {
             isProp = true;
           }
-        } else if (
-          (!child.children || child.children.length === 0) &&
-          child.value.length > 0 //?这个必>0其实没什么用
-        ) {
+        } else if (!child.children || child.children.length === 0) {
           isProp = true;
         }
         if (isProp) {
@@ -287,7 +285,7 @@ export default class PluginList2table extends Plugin {
           propForSelf.push(child.name);
           child.path = propForSelf;
         }
-        if (child.children.length === 0) {
+        if (child.children.length === 0 && child.value.length > 0) {
           let cell: cell = {
             concept: conceptForSelf,
             prop: propForSelf,
@@ -516,12 +514,6 @@ export default class PluginList2table extends Plugin {
         class: "",
       };
     }
-    const head = tableParts.head;
-    const left = tableParts.left;
-    const cells = tableParts.cells;
-    //*构建矩阵
-    const maxj = head.colspan + tableParts.maxLeftDepth;
-    const maxi = left.rowspan + tableParts.maxHeadDepth;
     function buildArr(
       maxi: number,
       maxj: number,
@@ -538,17 +530,6 @@ export default class PluginList2table extends Plugin {
       }
       return arr;
     }
-    let arr = buildArr(maxi, maxj, unfillCell);
-    //*左上空白区域
-    let leftHead: cell = {
-      concept: [],
-      prop: [],
-      value: [nodeParagraph("")],
-      colspan: tableParts.maxLeftDepth,
-      rowspan: tableParts.maxHeadDepth,
-    };
-    arr[0][0] = leftHead;
-    mergeCell(leftHead, 0, 0, arr);
     function isUnfillCell(cell: cell) {
       if (cell.class) {
         return false;
@@ -573,7 +554,6 @@ export default class PluginList2table extends Plugin {
       //let div2 = document.createTextNode(md);
       return div2;
     }
-    //*上方表头
     function fillHeadOrLeft(
       json: conceptTree,
       rowOrColNum: number,
@@ -600,13 +580,6 @@ export default class PluginList2table extends Plugin {
         fillHeadOrLeft(child, rowOrColNum + 1, arr, isLeft);
       }
     }
-    //let headArr=buildArr()
-    fillHeadOrLeft(head, 0, arr);
-    //console.log("上方表头", structuredClone(arr));
-    //*左侧表头
-    fillHeadOrLeft(left, 0, arr, true);
-    //console.log("左侧表头", arr);
-    //*主体单元格
     function fillCells(
       cells: cell[],
       arr: cell[][],
@@ -615,7 +588,7 @@ export default class PluginList2table extends Plugin {
     ) {
       for (let cell of cells) {
         //*查找概念（上方表头）
-        let colNum = 0;
+        let colNum = leftColNum; //无上方表头会直接跳过
         for (let i = headRowNum - 1; i >= 0; i--) {
           for (let j = leftColNum - 1; j < arr[i].length; j++) {
             if (arr[i][j].concept.toString() === cell.concept.toString()) {
@@ -630,7 +603,8 @@ export default class PluginList2table extends Plugin {
         //*查找属性（左侧表头）
         let rowNum = 0;
         for (let j = leftColNum - 1; j >= 0; j--) {
-          for (let i = headRowNum - 1; i < arr.length; i++) {
+          //无上方表头i初始值为0
+          for (let i = headRowNum ? headRowNum - 1 : 0; i < arr.length; i++) {
             if (arr[i][j].prop.toString() === cell.prop.toString()) {
               rowNum = i;
               break;
@@ -644,6 +618,33 @@ export default class PluginList2table extends Plugin {
         mergeCell(cell, rowNum, colNum, arr);
       }
     }
+    const head = tableParts.head;
+    const left = tableParts.left;
+    const cells = tableParts.cells;
+    //*构建矩阵
+    const maxj = head.colspan + tableParts.maxLeftDepth;
+    const maxi = left.rowspan + tableParts.maxHeadDepth;
+    let arr: cell[][];
+    if (tableParts.maxHeadDepth) {
+      arr = buildArr(maxi, maxj, unfillCell);
+      //*左上空白区域
+      let leftHead: cell = {
+        concept: [],
+        prop: [],
+        value: [nodeParagraph("")],
+        colspan: tableParts.maxLeftDepth,
+        rowspan: tableParts.maxHeadDepth,
+      };
+      arr[0][0] = leftHead;
+      mergeCell(leftHead, 0, 0, arr);
+      //*上方表头
+      fillHeadOrLeft(head, 0, arr);
+    } else {
+      arr = buildArr(maxi, maxj + 1, unfillCell);
+    }
+    //*左侧表头
+    fillHeadOrLeft(left, 0, arr, true);
+    //*主体单元格
     fillCells(cells, arr, tableParts.maxHeadDepth, tableParts.maxLeftDepth);
     return {
       //?markdown: markdown,

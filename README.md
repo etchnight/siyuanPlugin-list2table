@@ -272,17 +272,54 @@
 </td></tr></tbody></table>
 </details>
 
+### 无概念不会添加表头
+
+<details>
+<summary>点击展开</summary>
+<h4>转化前</h4>
+
+* 属性1：属性1内容
+* 属性2：属性2内容
+
+<h4>转化后</h4>
+
+<table border = '1'><colgroup><col></col><col></col></colgroup><thead><tr><th colspan="1" rowspan="1" ><p style="display: inline;">属性1</p>
+</th><td colspan="1" rowspan="1" ><p>属性1内容<br />
+</p>
+</td></tr></thead><tbody><tr><th colspan="1" rowspan="1" ><p style="display: inline;">属性2</p>
+</th><td colspan="1" rowspan="1" ><p>属性2内容<br />
+</p>
+</td></tr></tbody></table>
+</details>
+
+---
+或者可以直接利用这一特性显示`表格视图`
+<details>
+<summary>点击展开</summary>
+<h4>转化前</h4>
+
+* 占位符，无子节点会被视为属性
+* 1级
+
+  * 1-1级：1-1级内容
+  * 1-2级：1-2级内容
+
+    * 1-2-3级：1-2-3级内容
+
+<h4>转化后</h4>
+<table border = '1'><colgroup><col></col><col></col><col></col><col></col></colgroup><thead><tr><th colspan="3" rowspan="1" ><p style="display: inline;">占位符，无子节点会被视为属性</p>
+</th><td colspan="1" rowspan="1" ></td></tr></thead><tbody><tr><th colspan="1" rowspan="2" ><p style="display: inline;">1级</p>
+</th><th colspan="2" rowspan="1" ><p style="display: inline;">1-1级</p>
+</th><td colspan="1" rowspan="1" ><p>1-1级内容<br />
+</p>
+</td></tr><tr><th colspan="1" rowspan="1" ><p style="display: inline;">1-2级</p>
+</th><th colspan="1" rowspan="1" ><p style="display: inline;">1-2-3级</p>
+</th><td colspan="1" rowspan="1" ><p>1-2-3级内容<br />
+</p>
+</td></tr></tbody></table>
+</details>
+
 ## 已知问题及计划
-
-### 目前不支持无属性/无概念
-
-下例将无法转换成功，因为`概念1`无属性
-
-* 概念1
-* 概念2
-
-  * 属性1：概念2-属性1
-  * 属性2：概念2-属性2
 
 ### 其他
 
