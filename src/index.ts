@@ -182,9 +182,12 @@ export default class PluginList2table extends Plugin {
             } else {
               name = text.substring(0, index);
               //*删除name
-              let re = new RegExp(`${name}${splitFlag}`.split("").join(".*?"));
+              //let re = new RegExp(`${name}${splitFlag}`.split("").join(".*?"));
               //console.log(re);
-              item.innerHTML = item.innerHTML.replace(re, "");
+              item.textContent = item.textContent.replace(
+                `${name}${splitFlag}`,
+                ""
+              );
               //console.log(item.textContent);
               parent.value.push(item);
             }
