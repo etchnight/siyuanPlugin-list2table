@@ -895,15 +895,23 @@ export default class PluginList2table extends Plugin {
     const headRowNum = this.matrixInfo.leftColNum;
     const leftColNum = this.matrixInfo.headRowNum;
     const orginTable = this.matrixInfo.tableArr;
-    let tableArr = [];
+    let tableArr: cell[][] = [];
     for (let i = 0; i < orginTable.length; i++) {
       for (let j = 0; j < orginTable[0].length; j++) {
         if (tableArr.length < j + 1) {
           tableArr.push([]);
         }
-        tableArr[j][i] = orginTable[i][j];
+        tableArr[j][i] = {
+          concept: orginTable[i][j].concept,
+          value: orginTable[i][j].value,
+          prop: orginTable[i][j].prop,
+          class: orginTable[i][j].class,
+          colspan: orginTable[i][j].rowspan,
+          rowspan: orginTable[i][j].colspan,
+        };
       }
     }
+    this.debugConsole("转置后矩阵", tableArr);
     const ele = this.matrix2table(headRowNum, leftColNum, tableArr);
     this.debugConsole("转置后ele", ele);
     this.tableEle = ele;
