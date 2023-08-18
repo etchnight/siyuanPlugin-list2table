@@ -376,7 +376,7 @@ Or you can use this feature directly to display as 'table view'
 ### Other
 
 - [x] Transpose
-- [ ] Copy HTML to clipboard
+- [x] Copy HTML to clipboard
 
 ## Thanks
 
