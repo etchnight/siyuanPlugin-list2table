@@ -7,7 +7,7 @@ import {
   getFrontend,
 } from "siyuan";
 import { stringify, parse } from "@ungap/structured-clone/json";
-
+import { pushMsg } from "../../siyuanPlugin-common/siyuan-api";
 const STORAGE_NAME = "siyuanPlugin-list2table";
 
 export default class PluginList2table extends Plugin {
@@ -15,9 +15,10 @@ export default class PluginList2table extends Plugin {
   private blockIconEventBindThis = this.onBlockIconEvent.bind(this);
   private lute: Lute;
   //private luteClass: any;
-  private isdebug: boolean = false;
+  private isdebug: boolean = true;
   matrixInfo: { headRowNum: number; leftColNum: number; tableArr: cell[][] };
   dialog: Dialog;
+  tableEle: HTMLDivElement;
   onload() {
     const frontEnd = getFrontend();
     this.isMobile = frontEnd === "mobile" || frontEnd === "browser-mobile";
@@ -36,7 +37,8 @@ export default class PluginList2table extends Plugin {
     this.setting.addItem({
       title: this.i18n.splitFlag,
       createActionElement: () => {
-        splitFlagElement.className = "b3-text-field fn__flex-center fn__size200";
+        splitFlagElement.className =
+          "b3-text-field fn__flex-center fn__size200";
         splitFlagElement.value = this.data[STORAGE_NAME].splitFlag;
         return splitFlagElement;
       },
@@ -683,10 +685,16 @@ export default class PluginList2table extends Plugin {
     };
     this.debugConsole("tableArr", tableArr);
     const ele = this.matrix2table(headRowNum, leftColNum, tableArr);
+    this.tableEle = ele;
     this.debugConsole("ele", ele);
     this.showDialog(ele);
-    const html = this.blockDom2htmlClear(ele.innerHTML);
+  }
+  private copyHtml() {
+    const html = this.blockDom2htmlClear(this.tableEle.innerHTML);
     this.debugConsole("转化后", html);
+    navigator.clipboard.writeText(html).then(() => {
+      pushMsg(`已将转化后html复制至剪贴板`, 5000);
+    });
   }
   private matrix2table(
     //?markdown: string,
@@ -788,6 +796,9 @@ export default class PluginList2table extends Plugin {
     <button id='plugin-list2table-transpose' class="b3-button b3-button--outline fn__flex-center fn__size200" data-type="config">
             转置
         </button>
+        <button id='plugin-list2table-copyHtml' class="b3-button b3-button--outline fn__flex-center fn__size200" data-type="config">
+        复制Html代码
+    </button>
     <div id='plugin-list2table' class="protyle-wysiwyg protyle-wysiwyg--attr" style="height: 360px;">${ele.innerHTML}</div>
   </div>`;
     this.dialog = new Dialog({
@@ -800,6 +811,8 @@ export default class PluginList2table extends Plugin {
     const transposeThis = this.transpose.bind(this);
     document.getElementById("plugin-list2table-transpose").onclick =
       transposeThis;
+    const copyHtml = this.copyHtml.bind(this);
+    document.getElementById("plugin-list2table-copyHtml").onclick = copyHtml;
   }
   private onBlockIconEvent({ detail }: any) {
     if (detail.blockElements.length !== 1) {
@@ -893,6 +906,7 @@ export default class PluginList2table extends Plugin {
     }
     const ele = this.matrix2table(headRowNum, leftColNum, tableArr);
     this.debugConsole("转置后ele", ele);
+    this.tableEle = ele;
     document.getElementById("plugin-list2table").innerHTML = ele.innerHTML; //!
     this.matrixInfo = {
       headRowNum: headRowNum,
