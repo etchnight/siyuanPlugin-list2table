@@ -15,7 +15,9 @@ export default class PluginList2table extends Plugin {
   private blockIconEventBindThis = this.onBlockIconEvent.bind(this);
   private lute: Lute;
   //private luteClass: any;
-  private isdebug: boolean = false;
+  private isdebug: boolean = true;
+  matrixInfo: { headRowNum: number; leftColNum: number; tableArr: cell[][] };
+  dialog: Dialog;
   onload() {
     const frontEnd = getFrontend();
     this.isMobile = frontEnd === "mobile" || frontEnd === "browser-mobile";
@@ -674,9 +676,15 @@ export default class PluginList2table extends Plugin {
     this.debugConsole("tableParts", tableParts);
     const { headRowNum, tableArr, leftColNum } =
       this.tableParts2matrix(tableParts);
+    this.matrixInfo = {
+      headRowNum: headRowNum,
+      leftColNum: leftColNum,
+      tableArr: tableArr,
+    };
     this.debugConsole("tableArr", tableArr);
     const ele = this.matrix2table(headRowNum, leftColNum, tableArr);
     this.debugConsole("ele", ele);
+    this.showDialog(ele);
     const html = this.blockDom2htmlClear(ele.innerHTML);
     this.debugConsole("转化后", html);
   }
@@ -772,20 +780,27 @@ export default class PluginList2table extends Plugin {
     }
     //let html = ele.innerHTML;
     //html = lute.BlockDOM2HTML(html);
+    return ele;
+  }
+  private showDialog(ele: HTMLElement) {
     //*输出
     const content = ` <div class="b3-dialog__content">
-    <div class="protyle-wysiwyg protyle-wysiwyg--attr" style="height: 360px;">${ele.innerHTML}</div>
+    <button id='plugin-list2table-transpose' class="b3-button b3-button--outline fn__flex-center fn__size200" data-type="config">
+            转置
+        </button>
+    <div id='plugin-list2table' class="protyle-wysiwyg protyle-wysiwyg--attr" style="height: 360px;">${ele.innerHTML}</div>
   </div>`;
-    new Dialog({
+    this.dialog = new Dialog({
       title: "表格预览",
       transparent: false,
       width: this.isMobile ? "92vw" : "700px",
       content: content,
       height: "540px",
     });
-    return ele;
+    const transposeThis = this.transpose.bind(this);
+    document.getElementById("plugin-list2table-transpose").onclick =
+      transposeThis;
   }
-
   private onBlockIconEvent({ detail }: any) {
     if (detail.blockElements.length !== 1) {
       return;
@@ -862,6 +877,28 @@ export default class PluginList2table extends Plugin {
     //console.log(result);
     //navigator.clipboard.writeText(result);
     return result;
+  }
+  private transpose() {
+    const headRowNum = this.matrixInfo.leftColNum;
+    const leftColNum = this.matrixInfo.headRowNum;
+    const orginTable = this.matrixInfo.tableArr;
+    let tableArr = [];
+    for (let i = 0; i < orginTable.length; i++) {
+      for (let j = 0; j < orginTable[0].length; j++) {
+        if (tableArr.length < j + 1) {
+          tableArr.push([]);
+        }
+        tableArr[j][i] = orginTable[i][j];
+      }
+    }
+    const ele = this.matrix2table(headRowNum, leftColNum, tableArr);
+    this.debugConsole("转置后ele", ele);
+    document.getElementById("plugin-list2table").innerHTML = ele.innerHTML; //!
+    this.matrixInfo = {
+      headRowNum: headRowNum,
+      leftColNum: leftColNum,
+      tableArr: tableArr,
+    };
   }
   private debugConsole(...theArgs: any[]) {
     if (!this.isdebug) {
