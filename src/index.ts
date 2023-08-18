@@ -36,7 +36,7 @@ export default class PluginList2table extends Plugin {
     this.setting.addItem({
       title: this.i18n.splitFlag,
       createActionElement: () => {
-        //splitFlagElement.className = "b3-text-field fn__block";
+        splitFlagElement.className = "b3-text-field fn__flex-center fn__size200";
         splitFlagElement.value = this.data[STORAGE_NAME].splitFlag;
         return splitFlagElement;
       },
@@ -44,7 +44,7 @@ export default class PluginList2table extends Plugin {
     this.setting.addItem({
       title: this.i18n.maxIndex,
       createActionElement: () => {
-        //maxIndexElement.className = "b3-text-field fn__block";
+        maxIndexElement.className = "b3-text-field fn__flex-center fn__size200";
         maxIndexElement.type = "number";
         maxIndexElement.value = this.data[STORAGE_NAME].maxIndex;
         return maxIndexElement;
