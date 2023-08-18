@@ -15,7 +15,7 @@ export default class PluginList2table extends Plugin {
   private blockIconEventBindThis = this.onBlockIconEvent.bind(this);
   private lute: Lute;
   //private luteClass: any;
-  private isdebug: boolean = true;
+  private isdebug: boolean = false;
   matrixInfo: { headRowNum: number; leftColNum: number; tableArr: cell[][] };
   dialog: Dialog;
   onload() {
