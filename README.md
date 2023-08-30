@@ -15,6 +15,8 @@
 
 ❗ 1.1 版本后，由处理 markdown 改为处理 dom，支持功能更多，但转化后效果不同。
 
+🚀实验性，对标题块增加转表格支持，会将所选标题块之后的**同级**及其子级转化为二维表格。但目前与列表转表格不兼容，即标题下块除非带有分隔符合，其余块均会忽略。
+
 更详细的转换说明请见示例。
 
 ## 示例
@@ -371,6 +373,63 @@
 </td></tr></tbody></table>
 </details>
 
+### 标题块转换示例
+
+<details>
+<summary>点击展开</summary>
+<h4>转化前</h4>
+
+---
+
+#### 一级节点2
+
+##### 二级节点2-1
+
+属性1：二级节点2-1属性1内容
+
+属性2：二级节点2-2属性2内容
+
+##### 二级节点2-2
+
+属性1：二级节点2-2属性1内容
+
+二级节点中的一段不相关内容
+
+#### 一级节点1
+
+属性1：一级节点1属性1内容
+
+属性2：一级节点2属性2内容
+
+一级节点中的一段不相关的内容
+
+### 遇到上一层级停止扫描
+
+一段内容
+
+---
+
+<h4>转化后</h4>
+
+<table border = '1'><colgroup><col></col><col></col><col></col><col></col></colgroup><thead><tr><th colspan="1" rowspan="2" ><p style="display: inline;"></p>
+</th><th colspan="2" rowspan="1" ><p style="display: inline;">一级节点2</p>
+</th><th colspan="1" rowspan="2" ><p style="display: inline;">一级节点1</p>
+</th></tr><tr><th colspan="1" rowspan="1" ><p style="display: inline;">二级节点2-1</p>
+</th><th colspan="1" rowspan="1" ><p style="display: inline;">二级节点2-2</p>
+</th></tr></thead><tbody><tr><th colspan="1" rowspan="1" ><p style="display: inline;">属性1</p>
+</th><td colspan="1" rowspan="1" ><p>二级节点2-1属性1内容​<br />
+</p>
+</td><td colspan="1" rowspan="1" ><p>二级节点2-2属性1内容​<br />
+</p>
+</td><td colspan="1" rowspan="1" ><p>一级节点1属性1内容​<br />
+</p>
+</td></tr><tr><th colspan="1" rowspan="1" ><p style="display: inline;">属性2</p>
+</th><td colspan="1" rowspan="1" ><p>二级节点2-2属性2内容​<br />
+</p>
+</td><td colspan="1" rowspan="1" ></td><td colspan="1" rowspan="1" ><p>一级节点2属性2内容​<br />
+</p>
+</td></tr></tbody></table>
+</details>
 
 ## 已知问题及计划
 

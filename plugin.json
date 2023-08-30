@@ -2,10 +2,10 @@
   "name": "siyuanPlugin-list2table",
   "author": "dualwind",
   "url": "https://github.com/etchnight/siyuanPlugin-list2table",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "minAppVersion": "2.9.0",
-  "backends": ["windows", "linux", "darwin"],
-  "frontends": ["desktop"],
+  "backends": ["all"],
+  "frontends": ["desktop", "desktop-window", "browser-desktop"],
   "displayName": {
     "en_US": "list to table",
     "zh_CN": "列表转表格"
@@ -19,7 +19,6 @@
     "zh_CN": "README.md"
   },
   "funding": {
-    "custom": [
-    ]
+    "custom": []
   }
 }

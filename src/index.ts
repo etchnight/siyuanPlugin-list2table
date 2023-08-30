@@ -204,7 +204,94 @@ export default class PluginList2table extends Plugin {
       }
     }
   }
-
+  private dom2jsonForHead(dom: HTMLElement, json: conceptTree): void {
+    //查找自身所在位置
+    const parent = dom.parentElement;
+    const selfLevel = parseInt(dom.getAttribute("data-subtype").substring(1));
+    let isDomFinded = false;
+    let levelLast = selfLevel;
+    //let jsonLast = json;
+    let jsonParent = json;
+    const getLevel = (brother: Element) => {
+      let level = 0;
+      if (brother.getAttribute("data-type") == "NodeHeading") {
+        level = parseInt(brother.getAttribute("data-subtype").substring(1));
+      } else {
+        level = 50;
+      }
+      return level;
+    };
+    for (let brother of parent.children) {
+      if (brother == dom) {
+        isDomFinded = true;
+      }
+      if (!isDomFinded) {
+        continue;
+      }
+      if (!brother.getAttribute("data-node-id")) {
+        continue;
+      }
+      let level = getLevel(brother);
+      if (level < selfLevel) {
+        break;
+      }
+      const brotherClone = brother.cloneNode(true) as HTMLElement;
+      const name = this.buildJsonNodeName(brotherClone);
+      //console.log(level, name);
+      if (!name) {
+        continue;
+      }
+      //兄弟
+      if (level === levelLast) {
+        //jsonParent = jsonParent;
+      }
+      //下级
+      if (level > levelLast) {
+        jsonParent = jsonParent.children[jsonParent.children.length - 1];
+      }
+      //新级别
+      if (level < levelLast) {
+        while (jsonParent.parent && level <= getLevel(jsonParent.value[0])) {
+          jsonParent = jsonParent.parent;
+        }
+      }
+      jsonParent.children.push({
+        name: name,
+        value: [brotherClone],
+        parent: jsonParent,
+        path: jsonParent.parent ? jsonParent.path.concat(name) : [name],
+        children: [],
+      });
+      //jsonLast = jsonParent.children[jsonParent.children.length - 1];
+      levelLast = level;
+    }
+  }
+  /**
+   * 该函数会改变输入的dom
+   * @returns
+   */
+  private buildJsonNodeName(item: HTMLElement) {
+    let name: string; //HTMLElement;
+    let text = item.textContent;
+    const splitFlag = this.data[STORAGE_NAME].splitFlag;
+    const maxIndex = this.data[STORAGE_NAME].maxIndex;
+    const index = text.indexOf(splitFlag);
+    if (index < 0 || (maxIndex > 0 && index + 1 > maxIndex)) {
+      if (item.getAttribute("data-type") == "NodeHeading") {
+        return text;
+      } else {
+        return null;
+      }
+    } else {
+      name = text.substring(0, index);
+      //*删除name
+      //let re = new RegExp(`${name}${splitFlag}`.split("").join(".*?"));
+      //console.log(re);
+      item.textContent = item.textContent.replace(`${name}${splitFlag}`, "");
+      //console.log(item.textContent);
+      return name;
+    }
+  }
   private json2tableParts(json: conceptTree) {
     //*判断是否为属性并直接处理
     function determineProp(
@@ -597,17 +684,20 @@ export default class PluginList2table extends Plugin {
       for (let cell of cells) {
         //*查找概念（上方表头）
         let colNum = leftColNum; //无上方表头会直接跳过
+        let isFinded = false;
         for (let i = headRowNum - 1; i >= 0; i--) {
           for (let j = leftColNum - 1; j < arr[i].length; j++) {
             if (arr[i][j].concept.toString() === cell.concept.toString()) {
               colNum = j;
+              isFinded = true;
               break;
             }
           }
-          if (colNum) {
+          if (isFinded) {
             break;
           }
         }
+
         //*查找属性（左侧表头）
         let rowNum = 0;
         for (let j = leftColNum - 1; j >= 0; j--) {
@@ -623,6 +713,7 @@ export default class PluginList2table extends Plugin {
           }
         }
         arr[rowNum][colNum].value = cell.value;
+        //console.log(rowNum,colNum,cell.value[0].textContent)
         mergeCell(cell, rowNum, colNum, arr);
       }
     }
@@ -661,7 +752,11 @@ export default class PluginList2table extends Plugin {
       tableArr: arr,
     };
   }
-  private list2table(obj: { kramdown: string; dom: HTMLElement }) {
+  private list2table(obj: {
+    kramdown: string;
+    dom: HTMLElement;
+    domNoClone: HTMLElement;
+  }) {
     this.blockDom2htmlClear(obj.dom.innerHTML);
     //?const jsonList = this.markdown2jsonList(obj.kramdown);保留
     let json: conceptTree = {
@@ -671,7 +766,12 @@ export default class PluginList2table extends Plugin {
       path: ["root"],
       value: [document.createElement("div")],
     };
-    this.dom2json(obj.dom, json);
+    const blockType = obj.dom.getAttribute("data-type");
+    if (blockType == "NodeHeading") {
+      this.dom2jsonForHead(obj.domNoClone, json);
+    } else if (blockType == "NodeList") {
+      this.dom2json(obj.dom, json);
+    }
     this.debugConsole("json", json);
     //const json = this.listJson2json(jsonList);保留
     const tableParts = this.json2tableParts(json);
@@ -819,7 +919,10 @@ export default class PluginList2table extends Plugin {
       return;
     }
     const selectDom = detail.blockElements[0] as HTMLElement;
-    if (selectDom.getAttribute("data-type") !== "NodeList") {
+    if (
+      selectDom.getAttribute("data-type") !== "NodeList" &&
+      selectDom.getAttribute("data-type") !== "NodeHeading"
+    ) {
       return;
     }
     //console.log(lute.BlockDOM2HTML(selectDom.outerHTML));
@@ -830,7 +933,11 @@ export default class PluginList2table extends Plugin {
       id: "siyuanPlugin-list2table",
       async click() {
         let kramdown = lute.BlockDOM2StdMd(selectDom.outerHTML);
-        list2table({ kramdown: kramdown, dom: selectDom.cloneNode(true) });
+        list2table({
+          kramdown: kramdown,
+          dom: selectDom.cloneNode(true),
+          domNoClone: selectDom,
+        });
       },
     };
     detail.menu.addItem(menuItem);
