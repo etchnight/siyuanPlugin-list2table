@@ -2,7 +2,7 @@
   "name": "siyuanPlugin-list2table",
   "author": "dualwind",
   "url": "https://github.com/etchnight/siyuanPlugin-list2table",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "minAppVersion": "2.9.0",
   "backends": ["all"],
   "frontends": ["desktop", "desktop-window", "browser-desktop"],

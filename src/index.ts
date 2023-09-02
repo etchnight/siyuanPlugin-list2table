@@ -5,6 +5,7 @@ import {
   Plugin,
   Setting,
   getFrontend,
+  openTab,
 } from "siyuan";
 import { stringify, parse } from "@ungap/structured-clone/json";
 import { pushMsg } from "../../siyuanPlugin-common/siyuan-api";
@@ -16,9 +17,13 @@ export default class PluginList2table extends Plugin {
   private lute: Lute;
   //private luteClass: any;
   private isdebug: boolean = false;
-  matrixInfo: { headRowNum: number; leftColNum: number; tableArr: cell[][] };
+  private matrixInfo: {
+    headRowNum: number;
+    leftColNum: number;
+    tableArr: cell[][];
+  };
+  private tableEle: HTMLDivElement;
   dialog: Dialog;
-  tableEle: HTMLDivElement;
   onload() {
     const frontEnd = getFrontend();
     this.isMobile = frontEnd === "mobile" || frontEnd === "browser-mobile";
@@ -787,7 +792,7 @@ export default class PluginList2table extends Plugin {
     const ele = this.matrix2table(headRowNum, leftColNum, tableArr);
     this.tableEle = ele;
     this.debugConsole("ele", ele);
-    this.showDialog(ele);
+    this.showDialog();
   }
   private copyHtml() {
     const html = this.blockDom2htmlClear(this.tableEle.innerHTML);
@@ -887,33 +892,53 @@ export default class PluginList2table extends Plugin {
     }
     return ele;
   }
-  private showDialog(ele: HTMLElement) {
-    //*输出
-    const content = `<div class="b3-dialog__content">
-    <button id='plugin-list2table-transpose' class="b3-button b3-button--outline fn__flex-center fn__size200" data-type="config">
-            转置
-        </button>
-        <button id='plugin-list2table-copyHtml' class="b3-button b3-button--outline fn__flex-center fn__size200" data-type="config">
-        复制Html代码
-    </button>
-    <div id='plugin-list2table' class="protyle-wysiwyg protyle-wysiwyg--attr" style="height: 360px;">${ele.innerHTML}</div>
-  </div>`;
-    this.dialog = new Dialog({
+  private showDialog() {
+    const dialog = new Dialog({
       title: "表格预览",
       transparent: false,
       width: this.isMobile ? "92vw" : "700px",
-      content: content,
+      content: `<div id='plugin-list2table-dialog'></div>`,
       height: "540px",
     });
+    let UIele = this.makeUIele();
+    //*切换到tab功能
+    let tabButton = document.createElement("button");
+    tabButton.className =
+      "b3-button b3-button--outline fn__flex-center fn__size200";
+    tabButton.setAttribute("data-type", "config");
+    tabButton.innerText = "在标签页中显示";
+    tabButton.onclick = this.showTab.bind(this);
+    const divEle = UIele.querySelector("#plugin-list2table-function");
+    divEle.appendChild(tabButton);
+    document.getElementById("plugin-list2table-dialog").appendChild(UIele);
+    this.dialog = dialog;
+  }
+  private makeUIele() {
+    const content = `<div class="b3-dialog__content">
+    <div id='plugin-list2table-function'>
+    <button id='plugin-list2table-transpose' class="b3-button b3-button--outline fn__flex-center fn__size200" data-type="config">转置</button>
+        <button id='plugin-list2table-copyHtml' class="b3-button b3-button--outline fn__flex-center fn__size200" data-type="config">
+        复制Html代码
+    </button>
+    </div>
+    <div id='plugin-list2table' class="protyle-wysiwyg protyle-wysiwyg--attr" style="height: 360px;">${this.tableEle.innerHTML}</div>
+  </div>`;
+    const ele = document.createElement("div");
+    ele.innerHTML = content;
     //*功能
     const transposeThis = this.transpose.bind(this);
-    document.getElementById("plugin-list2table-transpose").onclick =
-      transposeThis;
+    const transposeButton = ele.querySelector(
+      "#plugin-list2table-transpose"
+    ) as HTMLElement;
+    transposeButton.onclick = transposeThis;
     const copyHtml = this.copyHtml.bind(this);
-    document.getElementById("plugin-list2table-copyHtml").onclick = copyHtml;
+    const copyHtmlButton = ele.querySelector(
+      "#plugin-list2table-copyHtml"
+    ) as HTMLElement;
+    copyHtmlButton.onclick = copyHtml;
     //*拖动改变列宽
-    // copy from siyuan\app\src\protyle\wysiwyg\index.ts
-    this.dialog.element.addEventListener("mousedown", (event: MouseEvent) => {
+    //copy from siyuan\app\src\protyle\wysiwyg\index.ts
+    ele.addEventListener("mousedown", (event: MouseEvent) => {
       const target = event.target as HTMLElement;
       // table col resize
       if (target.classList.contains("table__resize")) {
@@ -989,6 +1014,24 @@ export default class PluginList2table extends Plugin {
         return;
       }
     });
+    //this.UIele = ele;
+    return ele;
+  }
+  private showTab() {
+    const UIele = this.makeUIele();
+    const tab = openTab({
+      app: this.app,
+      custom: {
+        icon: "iconFace",
+        title: "表格预览",
+        fn: this.addTab({
+          type: "custom_tab",
+          init() {},
+        }),
+      },
+    });
+    tab.panelElement.appendChild(UIele);
+    this.dialog.destroy();
   }
   private onBlockIconEvent({ detail }: any) {
     if (detail.blockElements.length !== 1) {
