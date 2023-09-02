@@ -864,7 +864,6 @@ export default class PluginList2table extends Plugin {
       table.querySelector("thead").appendChild(tr.cloneNode(true));
       tr.remove(); //使用了remove导致不能用let tr of tbody.rows循环
     }
-    const lute = this.lute;
     //*写入属性、内容
     let i = 0;
     for (let tr of table.rows) {
@@ -886,13 +885,11 @@ export default class PluginList2table extends Plugin {
       }
       i++;
     }
-    //let html = ele.innerHTML;
-    //html = lute.BlockDOM2HTML(html);
     return ele;
   }
   private showDialog(ele: HTMLElement) {
     //*输出
-    const content = ` <div class="b3-dialog__content">
+    const content = `<div class="b3-dialog__content">
     <button id='plugin-list2table-transpose' class="b3-button b3-button--outline fn__flex-center fn__size200" data-type="config">
             转置
         </button>
@@ -908,11 +905,90 @@ export default class PluginList2table extends Plugin {
       content: content,
       height: "540px",
     });
+    //*功能
     const transposeThis = this.transpose.bind(this);
     document.getElementById("plugin-list2table-transpose").onclick =
       transposeThis;
     const copyHtml = this.copyHtml.bind(this);
     document.getElementById("plugin-list2table-copyHtml").onclick = copyHtml;
+    //*拖动改变列宽
+    // copy from siyuan\app\src\protyle\wysiwyg\index.ts
+    this.dialog.element.addEventListener("mousedown", (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      // table col resize
+      if (target.classList.contains("table__resize")) {
+        //原 !protyle.disabled &&
+        let nodeElement = target;
+        while (nodeElement && nodeElement.parentElement) {
+          if (nodeElement.hasAttribute("data-node-id")) {
+            break;
+          } else {
+            nodeElement = nodeElement.parentElement;
+          }
+        }
+        if (!nodeElement) {
+          return;
+        }
+        //const html = nodeElement.outerHTML;
+        // https://github.com/siyuan-note/siyuan/issues/4455
+        if (getSelection().rangeCount > 0) {
+          getSelection().getRangeAt(0).collapse(false);
+        }
+        // @ts-ignore
+        nodeElement.firstElementChild.style.webkitUserModify = "read-only";
+        nodeElement.style.cursor = "col-resize";
+        target.removeAttribute("style");
+        //const id = nodeElement.getAttribute("data-node-id");
+        const x = event.clientX;
+        const colIndex = parseInt(target.getAttribute("data-col-index"));
+        const colElement = nodeElement.querySelectorAll("table col")[
+          colIndex
+        ] as HTMLElement;
+        // 清空初始化 table 时的最小宽度
+        if (colElement.style.minWidth) {
+          colElement.style.width =
+            (
+              nodeElement.querySelectorAll("table td, table th")[
+                colIndex
+              ] as HTMLElement
+            ).offsetWidth + "px";
+          colElement.style.minWidth = "";
+        }
+        // 移除 cell 上的宽度限制 https://github.com/siyuan-note/siyuan/issues/7795
+        nodeElement
+          .querySelectorAll("tr")
+          .forEach((trItem: HTMLTableRowElement) => {
+            trItem.cells[colIndex].style.width = "";
+          });
+        const oldWidth = colElement.clientWidth;
+        const hasScroll =
+          nodeElement.firstElementChild.clientWidth <
+          nodeElement.firstElementChild.scrollWidth;
+        document.onmousemove = (moveEvent: MouseEvent) => {
+          if (nodeElement.style.textAlign === "center" && !hasScroll) {
+            colElement.style.width =
+              oldWidth + (moveEvent.clientX - x) * 2 + "px";
+          } else {
+            colElement.style.width = oldWidth + (moveEvent.clientX - x) + "px";
+          }
+        };
+
+        document.onmouseup = () => {
+          // @ts-ignore
+          nodeElement.firstElementChild.style.webkitUserModify = "";
+          nodeElement.style.cursor = "";
+          document.onmousemove = null;
+          document.onmouseup = null;
+          document.ondragstart = null;
+          document.onselectstart = null;
+          document.onselect = null;
+          /*if (nodeElement) {
+            updateTransaction(protyle, id, nodeElement.outerHTML, html);
+          }*/
+        };
+        return;
+      }
+    });
   }
   private onBlockIconEvent({ detail }: any) {
     if (detail.blockElements.length !== 1) {
@@ -925,7 +1001,6 @@ export default class PluginList2table extends Plugin {
     ) {
       return;
     }
-    //console.log(lute.BlockDOM2HTML(selectDom.outerHTML));
     const list2table = this.list2table.bind(this);
     const lute = this.lute;
     const menuItem: IMenuItemOption = {
@@ -942,18 +1017,6 @@ export default class PluginList2table extends Plugin {
     };
     detail.menu.addItem(menuItem);
   }
-  //todo 转置
-  /*private transpose(arr: any[][]) {
-        let newArr = buildArr(arr[0].length, arr.length, unfillCell);
-        for (let i = 0; i < arr.length; i++) {
-          for (let j = 0; j < arr[i].length; j++) {
-            newArr[j][i] = arr[i][j];
-            newArr[j][i].colspan = arr[i][j].rowspan;
-            newArr[j][i].rowspan = arr[i][j].colspan;
-          }
-        }
-        return newArr;
-      }*/
   private blockDom2htmlClear(html: string) {
     let result: string;
     const lute = this.lute;
