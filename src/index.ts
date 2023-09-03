@@ -7,6 +7,7 @@ import {
   getFrontend,
   openTab,
 } from "siyuan";
+//@ts-ignore
 import { stringify, parse } from "@ungap/structured-clone/json";
 import { pushMsg } from "../../siyuanPlugin-common/siyuan-api";
 const STORAGE_NAME = "siyuanPlugin-list2table";
@@ -17,14 +18,8 @@ export default class PluginList2table extends Plugin {
   private lute: Lute;
   //private luteClass: any;
   private isdebug: boolean = false;
-  private matrixInfo: {
-    headRowNum: number;
-    leftColNum: number;
-    tableArr: cell[][];
-  };
   private tableEle: HTMLDivElement;
-  dialog: Dialog;
-  customTab: any;
+  private dialog: Dialog;
   onload() {
     const frontEnd = getFrontend();
     this.isMobile = frontEnd === "mobile" || frontEnd === "browser-mobile";
@@ -60,6 +55,7 @@ export default class PluginList2table extends Plugin {
     });
   }
   async onLayoutReady() {
+    //@ts-ignore
     this.lute = window.Lute.New() as Lute;
     //this.luteClass = window.Lute;
     this.loadData(STORAGE_NAME);
@@ -150,7 +146,12 @@ export default class PluginList2table extends Plugin {
    *   |--列表项-列表 -列表项    =>    |-列表项-列表项
    *        |---段落等
    */
-  private dom2json(dom: HTMLElement, parent: conceptTree): void {
+  static dom2json(
+    dom: HTMLElement,
+    parent: conceptTree,
+    splitFlag: string,
+    maxIndex: number
+  ): void {
     let count = 0;
     for (let item2 of dom.children) {
       let item = item2 as HTMLElement;
@@ -169,11 +170,11 @@ export default class PluginList2table extends Plugin {
             path: structuredClone(parent.path),
           };
           parent.children.push(self);
-          this.dom2json(item, self);
+          PluginList2table.dom2json(item, self, splitFlag, maxIndex);
           break;
         //进入下级节点
         case "NodeList":
-          this.dom2json(item, parent);
+          PluginList2table.dom2json(item, parent, splitFlag, maxIndex);
           break;
         //修改父节点
         default:
@@ -184,8 +185,6 @@ export default class PluginList2table extends Plugin {
             item.getAttribute("data-type") === "NodeParagraph"
           ) {
             let text = item.textContent;
-            const splitFlag = this.data[STORAGE_NAME].splitFlag;
-            const maxIndex = this.data[STORAGE_NAME].maxIndex;
             const index = text.indexOf(splitFlag);
             if (index < 0 || (maxIndex > 0 && index + 1 > maxIndex)) {
               name = text;
@@ -210,7 +209,12 @@ export default class PluginList2table extends Plugin {
       }
     }
   }
-  private dom2jsonForHead(dom: HTMLElement, json: conceptTree): void {
+  static dom2jsonForHead(
+    dom: HTMLElement,
+    json: conceptTree,
+    splitFlag: string,
+    maxIndex: number
+  ): void {
     //查找自身所在位置
     const parent = dom.parentElement;
     const selfLevel = parseInt(dom.getAttribute("data-subtype").substring(1));
@@ -242,7 +246,11 @@ export default class PluginList2table extends Plugin {
         break;
       }
       const brotherClone = brother.cloneNode(true) as HTMLElement;
-      const name = this.buildJsonNodeName(brotherClone);
+      const name = PluginList2table.buildJsonNodeName(
+        brotherClone,
+        splitFlag,
+        maxIndex
+      );
       //console.log(level, name);
       if (!name) {
         continue;
@@ -276,11 +284,13 @@ export default class PluginList2table extends Plugin {
    * 该函数会改变输入的dom
    * @returns
    */
-  private buildJsonNodeName(item: HTMLElement) {
+  static buildJsonNodeName(
+    item: HTMLElement,
+    splitFlag: string,
+    maxIndex: number
+  ) {
     let name: string; //HTMLElement;
     let text = item.textContent;
-    const splitFlag = this.data[STORAGE_NAME].splitFlag;
-    const maxIndex = this.data[STORAGE_NAME].maxIndex;
     const index = text.indexOf(splitFlag);
     if (index < 0 || (maxIndex > 0 && index + 1 > maxIndex)) {
       if (item.getAttribute("data-type") == "NodeHeading") {
@@ -298,7 +308,7 @@ export default class PluginList2table extends Plugin {
       return name;
     }
   }
-  private json2tableParts(json: conceptTree) {
+  static json2tableParts(json: conceptTree, splitFlag: string) {
     //*判断是否为属性并直接处理
     function determineProp(
       json: conceptTree,
@@ -355,7 +365,6 @@ export default class PluginList2table extends Plugin {
     const newpropNameList = determineProp(json, [], propNameListUnique);
     //console.log([...new Set(newpropNameList)]);//二次生成属性全列表
     //*第一步修正-合并非属性节点的`属性名`和`属性值`，以防止丢失信息，可选
-    const splitFlag = this.data[STORAGE_NAME].splitFlag;
     function concatNameValue(json: conceptTree) {
       for (let child of json.children) {
         if (!child.isProp) {
@@ -558,7 +567,7 @@ export default class PluginList2table extends Plugin {
       maxHeadDepth: maxDepthOfConcept,
     };
   }
-  private tableParts2matrix(tableParts: {
+  static tableParts2matrix(tableParts: {
     cells: cell[];
     head: conceptTree;
     left: conceptTree;
@@ -763,7 +772,7 @@ export default class PluginList2table extends Plugin {
     dom: HTMLElement;
     domNoClone: HTMLElement;
   }) {
-    this.blockDom2htmlClear(obj.dom.innerHTML);
+    //PluginList2table.blockDom2htmlClear(obj.dom.innerHTML);
     //?const jsonList = this.markdown2jsonList(obj.kramdown);保留
     let json: conceptTree = {
       name: "root",
@@ -773,40 +782,51 @@ export default class PluginList2table extends Plugin {
       value: [document.createElement("div")],
     };
     const blockType = obj.dom.getAttribute("data-type");
+    const splitFlag = this.data[STORAGE_NAME].splitFlag;
+    const maxIndex = this.data[STORAGE_NAME].maxIndex;
     if (blockType == "NodeHeading") {
-      this.dom2jsonForHead(obj.domNoClone, json);
+      PluginList2table.dom2jsonForHead(
+        obj.domNoClone,
+        json,
+        splitFlag,
+        maxIndex
+      );
     } else if (blockType == "NodeList") {
-      this.dom2json(obj.dom, json);
+      PluginList2table.dom2json(obj.dom, json, splitFlag, maxIndex);
     }
-    this.debugConsole("json", json);
+    //this.debugConsole("json", json);
     //const json = this.listJson2json(jsonList);保留
-    const tableParts = this.json2tableParts(json);
-    this.debugConsole("tableParts", tableParts);
+    const tableParts = PluginList2table.json2tableParts(json, splitFlag);
+    //this.debugConsole("tableParts", tableParts);
     const { headRowNum, tableArr, leftColNum } =
-      this.tableParts2matrix(tableParts);
-    this.matrixInfo = {
-      headRowNum: headRowNum,
-      leftColNum: leftColNum,
-      tableArr: tableArr,
-    };
-    this.debugConsole("tableArr", tableArr);
-    const ele = this.matrix2table(headRowNum, leftColNum, tableArr);
+      PluginList2table.tableParts2matrix(tableParts);
+    //this.debugConsole("tableArr", tableArr);
+    const ele = PluginList2table.matrix2table(
+      headRowNum,
+      leftColNum,
+      tableArr,
+      this.lute
+    );
     this.tableEle = ele;
     this.debugConsole("ele", ele);
     this.showDialog();
   }
-  private copyHtml() {
-    const html = this.blockDom2htmlClear(this.tableEle.innerHTML);
-    this.debugConsole("转化后", html);
+  static copyHtml(event: MouseEvent) {
+    const ele = PluginList2table.getTableEle(event.target as HTMLElement);
+    //@ts-ignore
+    const lute = window.Lute.New() as Lute;
+    const html = PluginList2table.blockDom2htmlClear(ele.outerHTML, lute);
+    //this.debugConsole("转化后", html);
     navigator.clipboard.writeText(html).then(() => {
       pushMsg(`已将转化后html复制至剪贴板`, 5000);
     });
   }
-  private matrix2table(
+  static matrix2table(
     //?markdown: string,
     headRowNumber: number,
     leftColNumber: number,
-    tableArr: cell[][]
+    tableArr: cell[][],
+    lute: Lute
   ) {
     //*转html
     function buildMarkdown(arr: cell[][]) {
@@ -832,7 +852,7 @@ export default class PluginList2table extends Plugin {
       return markdown;
     }
     let markdown = buildMarkdown(tableArr);
-    const eleHtml = this.lute.Md2BlockDOM(markdown);
+    const eleHtml = lute.Md2BlockDOM(markdown);
     let ele = document.createElement("div");
     ele.innerHTML = eleHtml;
     let table = ele.querySelector("table");
@@ -901,7 +921,10 @@ export default class PluginList2table extends Plugin {
       content: `<div id='plugin-list2table-dialog'></div>`,
       height: "540px",
     });
-    let UIele = this.makeUIele();
+    //const data: data = { matrixInfo: this.matrixInfo, tableEle: this.tableEle };
+    //@ts-ignore
+    //dialog.data = data;
+    let UIele = PluginList2table.makeUIele(this.tableEle);
     //*切换到tab功能
     let tabButton = document.createElement("button");
     tabButton.className =
@@ -912,16 +935,19 @@ export default class PluginList2table extends Plugin {
     const divEle = UIele.querySelector("#plugin-list2table-function");
     divEle.appendChild(tabButton);
     document.getElementById("plugin-list2table-dialog").appendChild(UIele);
-    this.resizeTable(UIele);
+    PluginList2table.resizeTable(UIele);
     this.dialog = dialog;
   }
-  private resizeTable(container: HTMLElement) {
+  static resizeTable(container: HTMLElement) {
     const table = container.querySelector("table");
+    if (!table) {
+      return;
+    }
     const tableParent = table.parentElement;
     const width = window.getComputedStyle(tableParent).width;
     table.style.width = width;
   }
-  private makeUIele() {
+  static makeUIele(tableEle: HTMLElement) {
     const content = `
     <div id='plugin-list2table-function'>
     <button id='plugin-list2table-transpose' class="b3-button b3-button--outline fn__flex-center fn__size200" data-type="config">转置</button>
@@ -929,21 +955,21 @@ export default class PluginList2table extends Plugin {
         复制Html代码
     </button>
     </div>
-    <div id='plugin-list2table' class="protyle-wysiwyg protyle-wysiwyg--attr"">${this.tableEle.innerHTML}</div>`;
+    <div id='plugin-list2table' class="protyle-wysiwyg protyle-wysiwyg--attr"">${tableEle.innerHTML}</div>`;
     const ele = document.createElement("div");
     ele.className = "b3-dialog__content";
     ele.innerHTML = content;
     //*功能
-    const transposeThis = this.transpose.bind(this);
+    //const transposeThis = this.transpose.bind(this);
     const transposeButton = ele.querySelector(
       "#plugin-list2table-transpose"
     ) as HTMLElement;
-    transposeButton.onclick = transposeThis;
-    const copyHtml = this.copyHtml.bind(this);
+    transposeButton.onclick = this.transpose;
+    //const copyHtml = this.copyHtml.bind(this);
     const copyHtmlButton = ele.querySelector(
       "#plugin-list2table-copyHtml"
     ) as HTMLElement;
-    copyHtmlButton.onclick = copyHtml;
+    copyHtmlButton.onclick = this.copyHtml;
     //*拖动改变列宽
     //copy from siyuan\app\src\protyle\wysiwyg\index.ts
     ele.addEventListener("mousedown", (event: MouseEvent) => {
@@ -1026,17 +1052,16 @@ export default class PluginList2table extends Plugin {
     return ele;
   }
   private showTab() {
-    const UIele = this.makeUIele();
+    const UIele = PluginList2table.makeUIele(this.tableEle);
     const tabType = "custom_tab";
-    const resizeTable = this.resizeTable.bind(this);
-    this.customTab = this.addTab({
+    this.addTab({
       type: tabType,
       init() {
         this.element.appendChild(UIele);
-        resizeTable(this.element);
+        PluginList2table.resizeTable(this.element);
       },
       update() {
-        resizeTable(this.element);
+        PluginList2table.resizeTable(this.element);
       },
       resize() {},
       beforeDestroy() {},
@@ -1047,6 +1072,7 @@ export default class PluginList2table extends Plugin {
       custom: {
         icon: "iconFace",
         title: "表格预览",
+        //@ts-ignore
         id: this.name + tabType,
       },
     });
@@ -1079,9 +1105,9 @@ export default class PluginList2table extends Plugin {
     };
     detail.menu.addItem(menuItem);
   }
-  private blockDom2htmlClear(html: string) {
+  static blockDom2htmlClear(html: string, lute: Lute) {
     let result: string;
-    const lute = this.lute;
+    //const lute = this.lute;
     let ele = document.createElement("div");
     ele.innerHTML = html;
     let table = ele.querySelector("table");
@@ -1123,10 +1149,51 @@ export default class PluginList2table extends Plugin {
     //navigator.clipboard.writeText(result);
     return result;
   }
-  private transpose() {
-    const headRowNum = this.matrixInfo.leftColNum;
-    const leftColNum = this.matrixInfo.headRowNum;
-    const orginTable = this.matrixInfo.tableArr;
+  static getTableEle(node: HTMLElement) {
+    let tableEle: HTMLElement = null;
+    while (!tableEle && node.parentElement) {
+      let tableEle = node.querySelector("table");
+      if (!tableEle) {
+        node = node.parentElement;
+      } else {
+        return tableEle;
+      }
+    }
+  }
+
+  static transpose(event: MouseEvent) {
+    let node = event.target as HTMLElement;
+    let tableEle = PluginList2table.getTableEle(node) as HTMLTableElement;
+    if (!tableEle) {
+      return;
+    }
+    const headRowNum = tableEle.rows[0].cells[0].colSpan;
+    let tableClone = tableEle.cloneNode(true) as HTMLTableElement;
+    tableEle.tHead.remove();
+    for (let body of tableEle.tBodies) {
+      body.remove();
+    }
+    let tHead = tableEle.createTHead();
+    let tBody = tableEle.createTBody();
+    let part = tHead;
+    for (let i = 0; i < tableClone.rows.length; i++) {
+      let row = tableClone.rows[i];
+      for (let j = 0; j < row.cells.length; j++) {
+        if (j > headRowNum - 1) {
+          part = tBody;
+        } else {
+          part = tHead;
+        }
+        let cell = row.cells[j];
+        while (!tableEle.rows[j]) {
+          part.insertRow();
+        }
+        let cellClone = cell.cloneNode(true) as HTMLTableCellElement;
+        [cellClone.rowSpan, cellClone.colSpan] = [cell.colSpan, cell.rowSpan];
+        tableEle.rows[j].appendChild(cellClone);
+      }
+    }
+    /*
     let tableArr: cell[][] = [];
     for (let i = 0; i < orginTable.length; i++) {
       for (let j = 0; j < orginTable[0].length; j++) {
@@ -1143,18 +1210,16 @@ export default class PluginList2table extends Plugin {
         };
       }
     }
-    this.debugConsole("转置后矩阵", tableArr);
+    //this.debugConsole("转置后矩阵", tableArr);
     const ele = this.matrix2table(headRowNum, leftColNum, tableArr);
-    this.debugConsole("转置后ele", ele);
-    this.tableEle = ele;
-    const container = document.getElementById("plugin-list2table");
-    container.innerHTML = ele.innerHTML; //!
-    this.matrixInfo = {
-      headRowNum: headRowNum,
-      leftColNum: leftColNum,
-      tableArr: tableArr,
-    };
-    this.resizeTable(container);
+    return {
+      matrixInfo: {
+        headRowNum: headRowNum,
+        leftColNum: leftColNum,
+        tableArr: tableArr,
+      },
+      tableEle: ele,
+    };*/
   }
   private debugConsole(...theArgs: any[]) {
     if (!this.isdebug) {
