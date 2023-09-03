@@ -912,19 +912,26 @@ export default class PluginList2table extends Plugin {
     const divEle = UIele.querySelector("#plugin-list2table-function");
     divEle.appendChild(tabButton);
     document.getElementById("plugin-list2table-dialog").appendChild(UIele);
+    this.resizeTable(UIele);
     this.dialog = dialog;
   }
+  private resizeTable(container: HTMLElement) {
+    const table = container.querySelector("table");
+    const tableParent = table.parentElement;
+    const width = window.getComputedStyle(tableParent).width;
+    table.style.width = width;
+  }
   private makeUIele() {
-    const content = `<div class="b3-dialog__content">
+    const content = `
     <div id='plugin-list2table-function'>
     <button id='plugin-list2table-transpose' class="b3-button b3-button--outline fn__flex-center fn__size200" data-type="config">转置</button>
         <button id='plugin-list2table-copyHtml' class="b3-button b3-button--outline fn__flex-center fn__size200" data-type="config">
         复制Html代码
     </button>
     </div>
-    <div id='plugin-list2table' class="protyle-wysiwyg protyle-wysiwyg--attr"">${this.tableEle.innerHTML}</div>
-  </div>`;
+    <div id='plugin-list2table' class="protyle-wysiwyg protyle-wysiwyg--attr"">${this.tableEle.innerHTML}</div>`;
     const ele = document.createElement("div");
+    ele.className = "b3-dialog__content";
     ele.innerHTML = content;
     //*功能
     const transposeThis = this.transpose.bind(this);
@@ -1021,11 +1028,17 @@ export default class PluginList2table extends Plugin {
   private showTab() {
     const UIele = this.makeUIele();
     const tabType = "custom_tab";
+    const resizeTable = this.resizeTable.bind(this);
     this.customTab = this.addTab({
       type: tabType,
       init() {
         this.element.appendChild(UIele);
+        resizeTable(this.element);
       },
+      update() {
+        resizeTable(this.element);
+      },
+      resize() {},
       beforeDestroy() {},
       destroy() {},
     });
@@ -1134,12 +1147,14 @@ export default class PluginList2table extends Plugin {
     const ele = this.matrix2table(headRowNum, leftColNum, tableArr);
     this.debugConsole("转置后ele", ele);
     this.tableEle = ele;
-    document.getElementById("plugin-list2table").innerHTML = ele.innerHTML; //!
+    const container = document.getElementById("plugin-list2table");
+    container.innerHTML = ele.innerHTML; //!
     this.matrixInfo = {
       headRowNum: headRowNum,
       leftColNum: leftColNum,
       tableArr: tableArr,
     };
+    this.resizeTable(container);
   }
   private debugConsole(...theArgs: any[]) {
     if (!this.isdebug) {
