@@ -24,6 +24,7 @@ export default class PluginList2table extends Plugin {
   };
   private tableEle: HTMLDivElement;
   dialog: Dialog;
+  customTab: any;
   onload() {
     const frontEnd = getFrontend();
     this.isMobile = frontEnd === "mobile" || frontEnd === "browser-mobile";
@@ -921,7 +922,7 @@ export default class PluginList2table extends Plugin {
         复制Html代码
     </button>
     </div>
-    <div id='plugin-list2table' class="protyle-wysiwyg protyle-wysiwyg--attr" style="height: 360px;">${this.tableEle.innerHTML}</div>
+    <div id='plugin-list2table' class="protyle-wysiwyg protyle-wysiwyg--attr"">${this.tableEle.innerHTML}</div>
   </div>`;
     const ele = document.createElement("div");
     ele.innerHTML = content;
@@ -1019,18 +1020,23 @@ export default class PluginList2table extends Plugin {
   }
   private showTab() {
     const UIele = this.makeUIele();
+    const tabType = "custom_tab";
+    this.customTab = this.addTab({
+      type: tabType,
+      init() {
+        this.element.appendChild(UIele);
+      },
+      beforeDestroy() {},
+      destroy() {},
+    });
     const tab = openTab({
       app: this.app,
       custom: {
         icon: "iconFace",
         title: "表格预览",
-        fn: this.addTab({
-          type: "custom_tab",
-          init() {},
-        }),
+        id: this.name + tabType,
       },
     });
-    tab.panelElement.appendChild(UIele);
     this.dialog.destroy();
   }
   private onBlockIconEvent({ detail }: any) {
