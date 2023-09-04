@@ -1049,6 +1049,10 @@ export default class PluginList2table extends Plugin {
       }
     });
     //this.UIele = ele;
+    const resizeObserver = new ResizeObserver((entries) => {
+      PluginList2table.resizeTable(ele);
+    });
+    resizeObserver.observe(ele);
     return ele;
   }
   private showTab() {
@@ -1173,11 +1177,16 @@ export default class PluginList2table extends Plugin {
     for (let body of tableEle.tBodies) {
       body.remove();
     }
+    let colgroup = tableEle.querySelector("colgroup");
+    colgroup.innerHTML = "";
     let tHead = tableEle.createTHead();
     let tBody = tableEle.createTBody();
     let part = tHead;
     for (let i = 0; i < tableClone.rows.length; i++) {
       let row = tableClone.rows[i];
+      if (i > colgroup.childElementCount - 1) {
+        colgroup.appendChild(document.createElement("col"));
+      }
       for (let j = 0; j < row.cells.length; j++) {
         if (j > headRowNum - 1) {
           part = tBody;
