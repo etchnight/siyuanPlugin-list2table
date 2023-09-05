@@ -142,12 +142,13 @@ export default class PluginList2table extends Plugin {
   }*/
 
   /**
+   * 应当传入clone后的dom
    * 列表-列表项-段落等              -列表项
    *   |--列表项-列表 -列表项    =>    |-列表项-列表项
    *        |---段落等
    */
   static dom2json(
-    dom: HTMLElement,
+    dom: HTMLElement | Element,
     parent: conceptTree,
     splitFlag: string,
     maxIndex: number
@@ -209,6 +210,9 @@ export default class PluginList2table extends Plugin {
       }
     }
   }
+  /**
+   * 在生成时进行clone，因为需要寻找上下文，不能在传入clone后的dom
+   */
   static dom2jsonForHead(
     dom: HTMLElement,
     json: conceptTree,
@@ -241,16 +245,23 @@ export default class PluginList2table extends Plugin {
       if (!brother.getAttribute("data-node-id")) {
         continue;
       }
+      if (brother.getAttribute("data-type") === "NodeList") {
+        jsonParent = jsonParent.children[jsonParent.children.length - 1];
+        this.dom2json(
+          brother.cloneNode(true) as Element,
+          jsonParent,
+          splitFlag,
+          maxIndex
+        );
+        levelLast = 50;
+        continue;
+      }
       let level = getLevel(brother);
       if (level < selfLevel) {
         break;
       }
       const brotherClone = brother.cloneNode(true) as HTMLElement;
-      const name = PluginList2table.buildJsonNodeName(
-        brotherClone,
-        splitFlag,
-        maxIndex
-      );
+      const name = this.buildJsonNodeName(brotherClone, splitFlag, maxIndex);
       //console.log(level, name);
       if (!name) {
         continue;
@@ -279,6 +290,7 @@ export default class PluginList2table extends Plugin {
       //jsonLast = jsonParent.children[jsonParent.children.length - 1];
       levelLast = level;
     }
+    //console.log(json);
   }
   /**
    * 该函数会改变输入的dom
