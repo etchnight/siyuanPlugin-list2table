@@ -806,13 +806,13 @@ export default class PluginList2table extends Plugin {
     } else if (blockType == "NodeList") {
       PluginList2table.dom2json(obj.dom, json, splitFlag, maxIndex);
     }
-    //this.debugConsole("json", json);
+    this.debugConsole("json", json);
     //const json = this.listJson2json(jsonList);保留
     const tableParts = PluginList2table.json2tableParts(json, splitFlag);
-    //this.debugConsole("tableParts", tableParts);
+    this.debugConsole("tableParts", tableParts);
     const { headRowNum, tableArr, leftColNum } =
       PluginList2table.tableParts2matrix(tableParts);
-    //this.debugConsole("tableArr", tableArr);
+    this.debugConsole("tableArr", tableArr);
     const ele = PluginList2table.matrix2table(
       headRowNum,
       leftColNum,
@@ -828,7 +828,6 @@ export default class PluginList2table extends Plugin {
     //@ts-ignore
     const lute = window.Lute.New() as Lute;
     const html = PluginList2table.blockDom2htmlClear(ele.outerHTML, lute);
-    //this.debugConsole("转化后", html);
     navigator.clipboard.writeText(html).then(() => {
       pushMsg(`已将转化后html复制至剪贴板`, 5000);
     });
@@ -1231,7 +1230,6 @@ export default class PluginList2table extends Plugin {
         };
       }
     }
-    //this.debugConsole("转置后矩阵", tableArr);
     const ele = this.matrix2table(headRowNum, leftColNum, tableArr);
     return {
       matrixInfo: {
