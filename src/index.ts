@@ -246,26 +246,9 @@ export default class PluginList2table extends Plugin {
       if (!brother.getAttribute("data-node-id")) {
         continue;
       }
-      if (brother.getAttribute("data-type") === "NodeList") {
-        //jsonParent = jsonParent.children[jsonParent.children.length - 1];
-        this.dom2json(
-          brother.cloneNode(true) as Element,
-          jsonParent,
-          splitFlag,
-          maxIndex
-        );
-        levelLast = 50;
-        continue;
-      }
       let level = getLevel(brother);
       if (level < selfLevel) {
         break;
-      }
-      const brotherClone = brother.cloneNode(true) as HTMLElement;
-      const name = this.buildJsonNodeName(brotherClone, splitFlag, maxIndex);
-      //console.log(level, name);
-      if (!name) {
-        continue;
       }
       //兄弟
       if (level === levelLast) {
@@ -281,13 +264,29 @@ export default class PluginList2table extends Plugin {
           jsonParent = jsonParent.parent;
         }
       }
-      jsonParent.children.push({
-        name: name,
-        value: [brotherClone],
-        parent: jsonParent,
-        path: jsonParent.parent ? jsonParent.path.concat(name) : [name],
-        children: [],
-      });
+      if (brother.getAttribute("data-type") === "NodeList") {
+        //处理列表
+        this.dom2json(
+          brother.cloneNode(true) as Element,
+          jsonParent,
+          splitFlag,
+          maxIndex
+        );
+      } else {
+        const brotherClone = brother.cloneNode(true) as HTMLElement;
+        const name = this.buildJsonNodeName(brotherClone, splitFlag, maxIndex);
+        //console.log(level, name);
+        if (!name) {
+          continue;
+        }
+        jsonParent.children.push({
+          name: name,
+          value: [brotherClone],
+          parent: jsonParent,
+          path: jsonParent.parent ? jsonParent.path.concat(name) : [name],
+          children: [],
+        });
+      }
       //jsonLast = jsonParent.children[jsonParent.children.length - 1];
       levelLast = level;
     }
