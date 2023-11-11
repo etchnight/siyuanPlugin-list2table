@@ -17,7 +17,7 @@ export default class PluginList2table extends Plugin {
   private blockIconEventBindThis = this.onBlockIconEvent.bind(this);
   private lute: Lute;
   //private luteClass: any;
-  private isdebug: boolean = false;
+  private isdebug: boolean = true;
   private tableEle: HTMLDivElement;
   private dialog: Dialog;
   onload() {
@@ -211,6 +211,7 @@ export default class PluginList2table extends Plugin {
     }
   }
   /**
+   * 用于处理标题组成的文档
    * 在生成时进行clone，因为需要寻找上下文，不能在传入clone后的dom
    */
   static dom2jsonForHead(
@@ -246,7 +247,7 @@ export default class PluginList2table extends Plugin {
         continue;
       }
       if (brother.getAttribute("data-type") === "NodeList") {
-        jsonParent = jsonParent.children[jsonParent.children.length - 1];
+        //jsonParent = jsonParent.children[jsonParent.children.length - 1];
         this.dom2json(
           brother.cloneNode(true) as Element,
           jsonParent,
