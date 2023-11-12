@@ -179,26 +179,19 @@ export default class PluginList2table extends Plugin {
           break;
         //修改父节点
         default:
-          let name: string; //HTMLElement;
           //提取属性名
           if (
             count === 1 &&
             item.getAttribute("data-type") === "NodeParagraph"
           ) {
-            let text = item.textContent;
-            const index = text.indexOf(splitFlag);
-            if (index < 0 || (maxIndex > 0 && index + 1 > maxIndex)) {
-              name = text;
-            } else {
-              name = text.substring(0, index);
-              //*删除name
-              //let re = new RegExp(`${name}${splitFlag}`.split("").join(".*?"));
-              //console.log(re);
-              item.textContent = item.textContent.replace(
-                `${name}${splitFlag}`,
-                ""
-              );
-              //console.log(item.textContent);
+            let name: string = PluginList2table.buildJsonNodeName(
+              item,
+              splitFlag,
+              maxIndex,
+              false
+            );
+            if (name != item.textContent) {
+              //?需要这个判断么
               parent.value.push(item);
             }
             parent.name = name;
@@ -274,7 +267,12 @@ export default class PluginList2table extends Plugin {
         );
       } else {
         const brotherClone = brother.cloneNode(true) as HTMLElement;
-        const name = this.buildJsonNodeName(brotherClone, splitFlag, maxIndex);
+        const name = this.buildJsonNodeName(
+          brotherClone,
+          splitFlag,
+          maxIndex,
+          true
+        );
         //console.log(level, name);
         if (!name) {
           continue;
@@ -299,25 +297,44 @@ export default class PluginList2table extends Plugin {
   static buildJsonNodeName(
     item: HTMLElement,
     splitFlag: string,
-    maxIndex: number
+    maxIndex: number,
+    isHead: boolean
   ) {
     let name: string; //HTMLElement;
     let text = item.textContent;
     const index = text.indexOf(splitFlag);
     if (index < 0 || (maxIndex > 0 && index + 1 > maxIndex)) {
-      if (item.getAttribute("data-type") == "NodeHeading") {
-        return text;
-      } else {
+      if (item.getAttribute("data-type") != "NodeHeading" && isHead) {
         return null;
+      } else {
+        return text;
       }
     } else {
       name = text.substring(0, index);
       //*删除name
-      //let re = new RegExp(`${name}${splitFlag}`.split("").join(".*?"));
-      //console.log(re);
-      item.textContent = item.textContent.replace(`${name}${splitFlag}`, "");
-      //console.log(item.textContent);
+      recursionDelName(item, splitFlag);
+      //tem.textContent = item.textContent.replace(`${name}${splitFlag}`, "");
       return name;
+    }
+    function recursionDelName(item: Node, splitFlag: string) {
+      for (let node of item.childNodes) {
+        //console.log(node,node.textContent)
+        if (node.nodeType == 3) {
+          let valueList = node.textContent.split("");
+          for (let i = 0; i < valueList.length; i++) {
+            if (valueList[i] === splitFlag) {
+              valueList[i] = "";
+              node.textContent = valueList.join("");
+              return;
+            } else {
+              valueList[i] = "";
+            }
+          }
+          node.textContent = valueList.join("");
+        } else {
+          recursionDelName(node, splitFlag);
+        }
+      }
     }
   }
   static json2tableParts(json: conceptTree, splitFlag: string) {
@@ -437,7 +454,7 @@ export default class PluginList2table extends Plugin {
     function mergePropArray(props: conceptTree[]) {
       function findSameLevel(json: conceptTree, mergeResult: conceptTree) {
         for (let child of mergeResult.children) {
-          if (json.path.toString() === child.path.toString()) {
+          if (PluginList2table.isSameList(json.path, child.path)) {
             return child;
           } else {
             return findSameLevel(json, child);
@@ -448,9 +465,10 @@ export default class PluginList2table extends Plugin {
         //console.log(resInSameLevel)
         for (let child of json.children) {
           let childInSameLevel = resInSameLevel.children.find((item) => {
-            return item.path.toString() === child.path.toString();
+            return PluginList2table.isSameList(item.path, child.path);
           });
           if (!childInSameLevel) {
+            //console.log(resInSameLevel);
             resInSameLevel.children.push(child);
           } else {
             mergeProps(child, childInSameLevel);
@@ -561,7 +579,7 @@ export default class PluginList2table extends Plugin {
     function setCellRowspan(cells: cell[], propJson: conceptTree) {
       for (let child of propJson.children) {
         let cellList = cells.filter((item) => {
-          return item.prop.toString() === child.path.toString();
+          return PluginList2table.isSameList(item.prop, child.path);
         });
         cellList.forEach((item) => {
           item.rowspan = child.rowspan;
@@ -714,7 +732,7 @@ export default class PluginList2table extends Plugin {
         let isFinded = false;
         for (let i = headRowNum - 1; i >= 0; i--) {
           for (let j = leftColNum - 1; j < arr[i].length; j++) {
-            if (arr[i][j].concept.toString() === cell.concept.toString()) {
+            if (PluginList2table.isSameList(arr[i][j].concept, cell.concept)) {
               colNum = j;
               isFinded = true;
               break;
@@ -730,7 +748,7 @@ export default class PluginList2table extends Plugin {
         for (let j = leftColNum - 1; j >= 0; j--) {
           //无上方表头i初始值为0
           for (let i = headRowNum ? headRowNum - 1 : 0; i < arr.length; i++) {
-            if (arr[i][j].prop.toString() === cell.prop.toString()) {
+            if (PluginList2table.isSameList(arr[i][j].prop, cell.prop)) {
               rowNum = i;
               break;
             }
@@ -1250,6 +1268,13 @@ export default class PluginList2table extends Plugin {
     }
     console.log("列表转表格插件(引用)：", ...theArgs);
     console.log("列表转表格插件(克隆)：", ...newArgs);
+  }
+  static isSameList(item1: string[], item2: string[]) {
+    let str1 = item1.toString().replace(/[\u0000-\u0020]/g, "");
+    let str2 = item2.toString().replace(/[\u0000-\u0020]/g, "");
+    str1 = str1.replace(/[\u200B-\u200D\uFEFF]/g, "");
+    str2 = str2.replace(/[\u200B-\u200D\uFEFF]/g, "");
+    return str1 === str2;
   }
 }
 

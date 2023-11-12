@@ -332,7 +332,7 @@
 </td></tr></tbody></table>
 </details>
 
-### 注意，会清除概念名属性名所在段落的样式，与之对应，其部分样式不会影响表格生成
+### 样式不影响表格生成
 
 <details>
 <summary>点击展开</summary>
@@ -362,26 +362,25 @@
 </th><th colspan="1" rowspan="1" ><p style="display: inline;">概念2</p>
 </th></tr><tr><th colspan="1" rowspan="1" ><p style="display: inline;">概念2-1</p>
 </th></tr></thead><tbody><tr><th colspan="1" rowspan="1" ><p style="display: inline;">属性1</p>
-</th><td colspan="1" rowspan="1" ><p>​<br />
-</p>
+</th><td colspan="1" rowspan="1" ><p></p>
 <p>概<span data-type="strong u">念1-属性</span>2<br />
 </p>
 <p>第<span data-type="em">二行</span><br />
 </p>
-</td><td colspan="1" rowspan="1" ><p>概念2-1-属性1​<br />
+</td><td colspan="1" rowspan="1" ><p>概念2-1-<span data-type="s">属性1</span><br />
 </p>
 </td></tr><tr><th colspan="1" rowspan="1" ><p style="display: inline;">属性2</p>
-</th><td colspan="1" rowspan="1" ><p>概念1-属性2​<br />
+</th><td colspan="1" rowspan="1" ><p>概念1-属性2<br />
 </p>
-</td><td colspan="1" rowspan="1" ></td></tr><tr><th colspan="1" rowspan="1" ><p style="display: inline;">属性3</p>
-</th><td colspan="1" rowspan="1" ><p>概念1-属性3​<br />
+</td><td colspan="1" rowspan="1" ><p>概念<span data-type="kbd">2-1-属性</span>​​2<br />
 </p>
-</td><td colspan="1" rowspan="1" ><p>概念2-属性3​<br />
+</td></tr><tr><th colspan="1" rowspan="1" ><p style="display: inline;">属性3</p>
+</th><td colspan="1" rowspan="1" ><p>概念1-属性3<br />
 </p>
-</td></tr><tr><th colspan="1" rowspan="1" ><p style="display: inline;">属性2</p>
-</th><td colspan="1" rowspan="1" ></td><td colspan="1" rowspan="1" ><p>概念​2-1-属性​2​<br />
+</td><td colspan="1" rowspan="1" ><p>概念2-属性3<br />
 </p>
 </td></tr></tbody></table>
+
 </details>
 
 ### 标题块转换示例
