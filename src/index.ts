@@ -219,7 +219,7 @@ export default class PluginList2table extends Plugin {
     let isDomFinded = false;
     let levelLast = selfLevel;
     //let jsonLast = json;
-    let jsonParent = json;
+    let jsonParent = json; //父级
     const getLevel = (brother: Element) => {
       let level = 0;
       if (brother.getAttribute("data-type") == "NodeHeading") {
@@ -249,7 +249,9 @@ export default class PluginList2table extends Plugin {
       }
       //下级
       if (level > levelLast) {
-        jsonParent = jsonParent.children[jsonParent.children.length - 1];
+        if (jsonParent.children.length > 0) {
+          jsonParent = jsonParent.children[jsonParent.children.length - 1];
+        }
       }
       //新级别
       if (level < levelLast) {
@@ -912,13 +914,22 @@ export default class PluginList2table extends Plugin {
     table.innerHTML = tabelHtml;
     */
     //*写入属性和内容 dom操作
-    //*将部分body的tr移入head
+    //*将部分body的tr移入head 或 将head全部移入body
     let tbody = table.querySelector("tbody");
-    for (let i = 0; i < headRowNumber - 1; i++) {
-      let tr = tbody.children[i];
-      table.querySelector("thead").appendChild(tr.cloneNode(true));
-      tr.remove(); //使用了remove导致不能用let tr of tbody.rows循环
+    if (headRowNumber) {
+      for (let i = 0; i < headRowNumber - 1; i++) {
+        let tr = tbody.children[i];
+        table.querySelector("thead").appendChild(tr.cloneNode(true));
+        tr.remove(); //使用了remove导致不能用let tr of tbody.rows循环
+      }
+    } else {
+      let thead = table.querySelector("thead");
+      for (let tr of thead.children) {
+        tbody.appendChild(tr.cloneNode(true));
+        tr.remove();
+      }
     }
+
     //*写入属性、内容
     let i = 0;
     for (let tr of table.rows) {

@@ -9,3 +9,4 @@ dist
 build
 tmp
 test
+vite.config.ts.timestamp*
