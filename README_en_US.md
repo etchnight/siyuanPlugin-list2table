@@ -2,6 +2,8 @@
 
 [中文](./README.md)
 
+❗ This plug-in has been discontinued, and the related features are replaced by [Table View Plugin] (https://github.com/etchnight/siyuan-plugin-table-view).
+
 [Siyuan Notes](https://b3log.org/siyuan/) plug-in, which converts the list into a two-dimensional table through certain rules. Different from the table view, this plugin will extract the 'concept' in the original list to form the upper header, extract the 'attribute' to form the left header, and fill the content corresponding to the 'concept' and 'attribute' into the corresponding cell. The results are displayed in a new table without changing the contents of the original note.
 
 ## Usage
@@ -9,6 +11,7 @@
 When the plugin is enabled, a 'List to Table' menu item will be added to the menu of the list block (note that it is not a list item block), and clicking it will display the conversion result in a pop-up window.
 
 The following options are available within the plugin settings:
+
 - Separator between attribute name and attribute value: Separated symbol will be extracted as 'attribute name', separated symbol will be recognized as 'attribute value'
 - The maximum length of the attribute name, 0 means unlimited, if the separator appears outside this length, it will not be divided
 
@@ -220,12 +223,13 @@ In the following example, the separator is changed to `-`
 <summary>Click to expand</summary>
 <h4>List</h4>
 
-* 概念1
+- 概念 1
 
-  * 属性1-概念1-属性1
-* 概念2
+  - 属性 1-概念 1-属性 1
 
-  * 属性1-概念2-属性2
+- 概念 2
+
+  - 属性 1-概念 2-属性 2
 
 <h4>Table</h4>
 
@@ -248,14 +252,15 @@ The following example sets the maximum length of a property name to 10
 <summary>Click to expand</summary>
 <h4>List</h4>
 
-* 概念1
+- 概念 1
 
-  * 这是一个很长的概念名，包含分隔符：分隔符以后内容
+  - 这是一个很长的概念名，包含分隔符：分隔符以后内容
 
-    * 属性1：概念1-1-属性1
-  * 概念1-2
+    - 属性 1：概念 1-1-属性 1
 
-    * 属性1：概念1-2-属性1
+  - 概念 1-2
+
+    - 属性 1：概念 1-2-属性 1
 
 <h4>Table</h4>
 
@@ -277,8 +282,8 @@ The following example sets the maximum length of a property name to 10
 <summary>Click to expand</summary>
 <h4>List</h4>
 
-* 属性1：属性1内容
-* 属性2：属性2内容
+- 属性 1：属性 1 内容
+- 属性 2：属性 2 内容
 
 <h4>Table</h4>
 
@@ -292,19 +297,20 @@ The following example sets the maximum length of a property name to 10
 </details>
 
 ---
+
 Or you can use this feature directly to display as 'table view'
 
 <details>
 <summary>Click to expand</summary>
 <h4>List</h4>
 
-* 占位符，无子节点会被视为属性
-* 1级
+- 占位符，无子节点会被视为属性
+- 1 级
 
-  * 1-1级：1-1级内容
-  * 1-2级：1-2级内容
+  - 1-1 级：1-1 级内容
+  - 1-2 级：1-2 级内容
 
-    * 1-2-3级：1-2-3级内容
+    - 1-2-3 级：1-2-3 级内容
 
 <h4>Table</h4>
 <table border = '1'><colgroup><col></col><col></col><col></col><col></col></colgroup><thead><tr><th colspan="3" rowspan="1" ><p style="display: inline;">占位符，无子节点会被视为属性</p>
@@ -325,22 +331,24 @@ Or you can use this feature directly to display as 'table view'
 <summary>Click to expand</summary>
 <h4>List</h4>
 
-* 概念1
+- 概念 1
 
-  * *属性*1：
+  - *属性*1：
 
-    概**<u>念1-属性</u>**2
+    概**<u>念 1-属性</u>**2
 
     第*二行*
-  * 属<u>性2</u>：概念1-属性2
-  * ^属性^3：概念1-属性3
-* 概念2
 
-  * 概念2-1
+  - 属<u>性 2</u>：概念 1-属性 2
+  - ^属性^3：概念 1-属性 3
 
-    * 属==性1==：概念2-1-~~属性1~~
-    * 属`性2`：概念<kbd>2-1-属性</kbd>2
-    * 属**性3**：概念2-属性3
+- 概念 2
+
+  - 概念 2-1
+
+    - 属==性 1==：概念 2-1-~~属性 1~~
+    - 属`性2`：概念<kbd>2-1-属性</kbd>2
+    - 属**性 3**：概念 2-属性 3
 
 <h4>Table</h4>
 
